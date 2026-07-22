@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gabrini — Dashboard Andamento</title>
+<style>
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb;
+  --ink-1: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --gray-a: #898781; --gray-b: #c3c2b7;
+  --good: #006300; --bad: #d03b3b;
+  --accent-soft: #86b6ef;
+  background: var(--page); color: var(--ink-1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) body {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --gray-a: #898781; --gray-b: #52514e;
+    --good: #0ca30c; --bad: #d03b3b;
+    --accent-soft: #1c5cab;
+  }
+}
+:root[data-theme="dark"] body {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19;
+  --ink-1: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835;
+  --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+  --gray-a: #898781; --gray-b: #52514e;
+  --good: #0ca30c; --bad: #d03b3b;
+  --accent-soft: #1c5cab;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 20px 24px 64px; }
+header.top {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 14px 0 6px;
+}
+header.top h1 { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+header.top .period { font-size: 13px; color: var(--ink-2); }
+header.top .spacer { flex: 1; }
+#themeBtn {
+  font: inherit; font-size: 12.5px; color: var(--ink-2);
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+#themeBtn:hover { color: var(--ink-1); }
+
+nav.tabs { display: flex; gap: 4px; margin: 14px 0 22px; border-bottom: 1px solid var(--grid); flex-wrap: wrap; }
+nav.tabs button {
+  font: inherit; font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 9px 14px 10px; cursor: pointer; margin-bottom: -1px;
+}
+nav.tabs button:hover { color: var(--ink-1); }
+nav.tabs button[aria-selected="true"] { color: var(--ink-1); font-weight: 600; border-bottom-color: var(--s1); }
+section.tabpane { display: none; }
+section.tabpane.active { display: block; }
+
+.grid { display: grid; gap: 16px; }
+.grid.kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 16px; }
+.grid.two { grid-template-columns: 1fr 1fr; }
+.grid.hero-row { grid-template-columns: minmax(300px, 1.15fr) 2fr; align-items: stretch; }
+.grid.hero-row .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 560px) { .grid.hero-row .kpis { grid-template-columns: 1fr; } }
+@media (max-width: 880px) { .grid.two, .grid.hero-row { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+}
+.card h3 { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+.card .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.card .chead { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.card .chead > div:first-child { flex: 1; }
+.tblBtn {
+  font: inherit; font-size: 11.5px; color: var(--muted); background: none;
+  border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer;
+  white-space: nowrap;
+}
+.tblBtn:hover { color: var(--ink-1); }
+.chartbox { position: relative; }
+.chartbox svg { display: block; width: 100%; height: auto; }
+
+/* stat tiles */
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 15px 18px; }
+.tile .lbl { font-size: 12px; color: var(--ink-2); }
+.tile .val { font-size: 24px; font-weight: 600; margin-top: 5px; letter-spacing: -0.01em; }
+.tile .delta { font-size: 12px; margin-top: 5px; color: var(--ink-2); }
+.tile .delta .dn, .delta .dn { color: var(--bad); font-weight: 600; }
+.tile .delta .up, .delta .up { color: var(--good); font-weight: 600; }
+.hero { display: flex; flex-direction: column; justify-content: center; }
+.hero .lbl { font-size: 13px; color: var(--ink-2); }
+.hero .val { font-size: 52px; font-weight: 650; letter-spacing: -0.02em; margin: 8px 0 4px; }
+.hero .delta { font-size: 13.5px; color: var(--ink-2); }
+
+/* legend */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 2px 0 12px; font-size: 12px; color: var(--ink-2); }
+.legend .li { display: inline-flex; align-items: center; gap: 6px; }
+.legend .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend .ln { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+
+/* chips */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.chips button {
+  font: inherit; font-size: 12.5px; color: var(--ink-2); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 13px; cursor: pointer;
+}
+.chips button:hover { color: var(--ink-1); }
+.chips button[aria-pressed="true"] { color: var(--ink-1); font-weight: 600; border-color: var(--s1); box-shadow: inset 0 0 0 1px var(--s1); }
+
+/* tooltip */
+#tip {
+  position: fixed; z-index: 50; pointer-events: none; display: none;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 11px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+  max-width: 280px;
+}
+#tip .t { font-weight: 600; color: var(--ink-2); font-size: 11.5px; margin-bottom: 4px; }
+#tip .row { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+#tip .k { width: 14px; height: 2.5px; border-radius: 1px; flex: none; }
+#tip .nm { color: var(--ink-2); flex: 1; }
+#tip .v { font-weight: 650; color: var(--ink-1); font-variant-numeric: tabular-nums; margin-left: 8px; }
+
+/* tables */
+.tblwrap { overflow-x: auto; }
+table.dv { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.dv th, table.dv td { padding: 6px 10px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.dv th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--grid); }
+table.dv td:first-child, table.dv th:first-child { text-align: left; position: sticky; left: 0; background: var(--surface-1); }
+table.dv tr:not(:last-child) td { border-bottom: 1px solid var(--grid); }
+table.dv td.neg { color: var(--bad); }
+table.dv tr.strong td { font-weight: 650; }
+
+.note { font-size: 11.5px; color: var(--muted); margin-top: 26px; }
+.sectionTitle { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 26px 0 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.sectionTitle:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Gabrini · Dashboard Andamento</h1>
+    <span class="period">Aggiornato a giugno 2026 (YTD)</span>
+    <span class="spacer"></span>
+    <button id="themeBtn" title="Tema">Tema: auto</button>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="tabpane" id="pane-overview" role="tabpanel"></section>
+  <section class="tabpane" id="pane-ricavi" role="tabpanel"></section>
+  <section class="tabpane" id="pane-pl" role="tabpanel"></section>
+  <section class="tabpane" id="pane-settimane" role="tabpanel"></section>
+  <section class="tabpane" id="pane-prodotti" role="tabpanel"></section>
+  <section class="tabpane" id="pane-fasce" role="tabpanel"></section>
+
+  <p class="note">Fonte: Gabrini_Andamento1.xlsx · dati aggiornati a giugno 2026. Il costo del personale è incluso nei costi generali; l'EBITDA è calcolato dopo il personale.</p>
+</div>
+<div id="tip"></div>
+
+<script>
+const DATA = {"ytd": [{"label": "RICAVI TOTALI", "a24": 777646.33, "p24": 0, "a25": 862524.68, "p25": 0, "v2524": 0.11, "a26": 1042172.63, "p26": 0, "v2625": 0.21, "bu26": 1086949.21, "pbu": 0, "vbu_e": -44776.58, "vbu_p": -0.04}, {"label": "Food", "a24": 635265.67, "p24": 0, "a25": 702358.94, "p25": 0, "v2524": 0.11, "a26": 810754.94, "p26": 0, "v2625": 0.15, "bu26": 853219.56, "pbu": 0, "vbu_e": -42464.62, "vbu_p": -0.05}, {"label": "Beverage", "a24": 142380.66, "p24": 0, "a25": 160165.74, "p25": 0, "v2524": 0.12, "a26": 212917.69, "p26": 0, "v2625": 0.33, "bu26": 216229.66, "pbu": 0, "vbu_e": -3311.96, "vbu_p": -0.02}, {"label": "Altro", "a24": 0.0, "p24": 0, "a25": 0.0, "p25": 0, "v2524": 0.0, "a26": 18500.0, "p26": 0, "v2625": 0.0, "bu26": 17500.0, "pbu": 0, "vbu_e": 1000.0, "vbu_p": 0.06}, {"label": "COSTI PRODUZIONE", "a24": 452572.27, "p24": 0.58, "a25": 380794.34, "p25": 0.44, "v2524": -0.16, "a26": 386503.27, "p26": 0.37, "v2625": 0.01, "bu26": 376653.26, "pbu": 0.35, "vbu_e": 9850.01, "vbu_p": 0.03}, {"label": "Costi Food", "a24": 364950.78, "p24": 0.57, "a25": 309529.28, "p25": 0.44, "v2524": -0.15, "a26": 316991.83, "p26": 0.39, "v2625": 0.02, "bu26": 302424.88, "pbu": 0.35, "vbu_e": 14566.95, "vbu_p": 0.05}, {"label": "Consumabili Food", "a24": 31437.08, "p24": 0.05, "a25": 16953.81, "p25": 0.02, "v2524": -0.46, "a26": 17641.64, "p26": 0.02, "v2625": 0.04, "bu26": 20257.99, "pbu": 0.02, "vbu_e": -2616.35, "vbu_p": -0.13}, {"label": "Costi Beverage", "a24": 54876.09, "p24": 0.39, "a25": 52888.49, "p25": 0.33, "v2524": -0.04, "a26": 51250.25, "p26": 0.24, "v2625": -0.03, "bu26": 52576.06, "pbu": 0.24, "vbu_e": -1325.81, "vbu_p": -0.03}, {"label": "Consumabili Beverage", "a24": 1308.32, "p24": 0.01, "a25": 1422.76, "p25": 0.01, "v2524": 0.09, "a26": 619.55, "p26": 0.0, "v2625": -0.56, "bu26": 1394.33, "pbu": 0.01, "vbu_e": -774.78, "vbu_p": -0.56}, {"label": "MACO", "a24": 325074.06, "p24": 0.42, "a25": 481730.34, "p25": 0.56, "v2524": 0.48, "a26": 655669.36, "p26": 0.63, "v2625": 0.36, "bu26": 710295.95, "pbu": 0.65, "vbu_e": -54626.59, "vbu_p": -0.08}, {"label": "COSTI GENERALI", "a24": 294222.75, "p24": 0.38, "a25": 285138.54, "p25": 0.33, "v2524": -0.03, "a26": 331001.81, "p26": 0.32, "v2625": 0.16, "bu26": 332875.89, "pbu": 0.31, "vbu_e": -1874.08, "vbu_p": -0.01}, {"label": "Affitti", "a24": 126274.0, "p24": 0.16, "a25": 126548.0, "p25": 0.15, "v2524": 0.0, "a26": 173196.0, "p26": 0.17, "v2625": 0.37, "bu26": 172922.0, "pbu": 0.16, "vbu_e": 274.0, "vbu_p": 0.0}, {"label": "Servizi", "a24": 108688.6, "p24": 0.14, "a25": 90462.23, "p25": 0.1, "v2524": -0.17, "a26": 76149.15, "p26": 0.07, "v2625": -0.16, "bu26": 86117.35, "pbu": 0.08, "vbu_e": -9968.2, "vbu_p": -0.12}, {"label": "Utenze", "a24": 38760.3, "p24": 0.05, "a25": 37195.02, "p25": 0.04, "v2524": -0.04, "a26": 48437.03, "p26": 0.05, "v2625": 0.3, "bu26": 45809.22, "pbu": 0.04, "vbu_e": 2627.81, "vbu_p": 0.06}, {"label": "Altri costi", "a24": 20499.85, "p24": 0.03, "a25": 30933.29, "p25": 0.04, "v2524": 0.51, "a26": 33219.63, "p26": 0.03, "v2625": 0.07, "bu26": 28027.32, "pbu": 0.03, "vbu_e": 5192.31, "vbu_p": 0.19}, {"label": "PERSONALE", "a24": 533988.92, "p24": 0.69, "a25": 527553.36, "p25": 0.61, "v2524": -0.01, "a26": 510631.86, "p26": 0.49, "v2625": -0.03, "bu26": 543551.67, "pbu": 0.5, "vbu_e": -32919.81, "vbu_p": -0.06}, {"label": "EBITDA", "a24": -503137.61, "p24": -0.65, "a25": -330961.57, "p25": -0.38, "v2524": 0.34, "a26": -185964.31, "p26": -0.18, "v2625": 0.44, "bu26": -166131.61, "pbu": -0.15, "vbu_e": -19832.7, "vbu_p": -0.12}], "ytd_period": "GIUGNO YTD", "mensile": {"2024": {"ricavi": [142554.54, 131782.51, 134339.29, 127374.63, 131204.02, 110391.34, 99037.03, 110143.24, 128199.32, 147241.73, 156697.13, 279104.94], "food": [117738.52, 109148.83, 109241.15, 102543.1, 106311.12, 90282.94, 79798.67, 86971.42, 106313.2, 120463.96, 130357.59, 173540.69], "beverage": [24816.01, 22633.68, 25098.14, 24831.54, 24892.9, 20108.4, 19238.36, 20771.82, 21886.12, 26777.76, 26339.54, 29494.79], "altro": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2400.0, 0.0, 0.0, 0.0, 76069.46], "costiprod": [97410.09, 72331.73, 75429.96, 69104.31, 80914.9, 57381.28, 63260.29, 41020.6, 58567.5, 94167.79, 77481.15, 96128.32], "maco": [45144.45, 59450.78, 58909.33, 58270.32, 50289.12, 53010.06, 35776.74, 69122.64, 69631.82, 53073.94, 79215.98, 182976.62], "affitti": [21274.0, 21000.0, 21000.0, 21000.0, 21000.0, 21000.0, 21000.0, 21000.0, 21548.0, 21000.0, 21274.0, 21000.0], "personale": [86277.03, 85558.5, 88353.05, 89140.98, 90284.28, 94375.09, 88329.61, 86851.64, 84015.11, 86500.21, 88966.98, 88089.38], "servizi": [15612.02, 23855.79, 21423.07, 14271.12, 16690.75, 16835.85, 16272.21, 12383.73, 13790.12, 14662.79, 16131.99, 21363.5], "utenze": [4131.57, 6305.44, 9599.9, 7155.24, 6871.86, 4696.29, 4511.23, 15382.53, 7053.52, 9543.49, 6451.34, 9730.49], "ebitda": [-85061.37, -81265.51, -84774.74, -77395.7, -87376.26, -87264.03, -96955.99, -68341.09, -67650.66, -82476.31, -56390.08, 38332.71]}, "2025": {"ricavi": [148112.58, 135780.54, 153296.58, 140726.13, 155772.07, 128836.78, 126961.91, 109802.98, 165014.52, 180419.04, 186657.83, 235540.08], "food": [123355.24, 112151.18, 127979.03, 113842.33, 123547.76, 101483.4, 100235.46, 86253.61, 120498.6, 140665.79, 149575.35, 194763.81], "beverage": [24757.34, 23629.36, 25317.55, 26883.8, 32224.31, 27353.38, 26726.45, 23549.37, 33373.74, 39753.25, 37082.48, 40276.27], "altro": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 11142.18, 0.0, 0.0, 500.0], "costiprod": [61477.83, 56326.19, 61101.87, 69492.22, 71846.36, 60549.87, 52219.26, 35165.19, 79411.62, 78035.21, 65918.22, 93137.69], "maco": [86634.75, 79454.35, 92194.71, 71233.91, 83925.71, 68286.91, 74742.65, 74637.79, 85602.9, 102383.83, 120739.61, 142402.39], "affitti": [21274.0, 21000.0, 21000.0, 21274.0, 21000.0, 21000.0, 21274.0, 28000.0, 28000.0, 28000.0, 28000.0, 28956.0], "personale": [83178.32, 87212.8, 85187.32, 89847.37, 91642.89, 90484.66, 92390.06, 88948.71, 90248.38, 90186.26, 93980.42, 91930.09], "servizi": [13982.94, 13541.27, 13952.92, 17220.93, 13610.87, 18153.29, 12993.32, 15818.29, 25807.6, 9647.38, 13052.76, 29155.24], "utenze": [8418.03, 8836.0, 8554.87, 3866.92, 7519.2, 0.0, 4792.78, 12963.51, 4028.83, 7747.53, 5085.6, 8907.21], "ebitda": [-42981.82, -56672.54, -40810.47, -66245.53, -52885.75, -71365.44, -59032.01, -72847.24, -72070.51, -38569.19, -23185.13, -26463.75]}, "2026": {"ricavi": [176985.86, 160374.74, 193153.14, 182750.74, 175682.52, 153225.63, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "food": [129524.32, 127127.47, 156032.22, 144412.52, 136306.09, 117352.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "beverage": [33461.54, 33247.27, 37120.92, 38338.22, 39376.43, 31373.33, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "altro": [14000.0, 0.0, 0.0, 0.0, 0.0, 4500.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "costiprod": [53928.15, 61495.36, 78942.33, 63946.43, 71502.37, 56688.63, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "maco": [123057.71, 98879.38, 114210.81, 118804.31, 104180.15, 96537.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "affitti": [28922.0, 28800.0, 28800.0, 29074.0, 28800.0, 28800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "personale": [84457.9, 85430.19, 82663.58, 86545.64, 86218.86, 85315.69, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "servizi": [13012.92, 9902.76, 16984.3, 11181.28, 12484.72, 12583.17, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "utenze": [9490.12, 4728.2, 10040.9, 9409.89, 8457.65, 6310.27, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ebitda": [-22342.3, -33447.49, -28768.04, -25259.97, -36312.05, -39834.46, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}}, "pl_cat": [{"label": "Banco Salumeria", "m": [18724.39, 16319.39, 18563.94, 18753.94, 16335.37, 14927.06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 103624.1}, {"label": "Banco Gastronomia", "m": [61839.35, 63034.9, 72039.32, 68892.87, 68095.86, 56902.48, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 390804.78}, {"label": "Banco Pizza", "m": [21034.98, 18013.73, 28197.57, 20420.85, 17039.38, 14302.52, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 119009.03}, {"label": "Banco Pane", "m": [676.1, 722.35, 680.5, 645.86, 650.13, 490.45, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 3865.39}, {"label": "Banco Pasticceria", "m": [11006.96, 10775.58, 12859.47, 12542.12, 10950.44, 8494.66, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 66629.23}, {"label": "Aperitivo", "m": [1142.16, 1052.76, 1153.29, 1285.47, 1281.34, 674.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 6589.35}, {"label": "Ristorazione", "m": [11764.25, 12961.78, 15442.32, 17332.81, 18712.75, 14188.97, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 90402.89}, {"label": "Catering", "m": [1712.09, 3393.05, 6285.18, 3271.21, 2498.14, 7088.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 24248.57}, {"label": "Prodotti da rivendita", "m": [1624.05, 853.93, 810.63, 1267.39, 742.67, 282.92, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 5581.59}, {"label": "Vino", "m": [10649.98, 11137.74, 11611.19, 11550.18, 11289.19, 8145.32, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 64383.59}, {"label": "Banco Bar", "m": [22811.56, 22109.53, 25509.73, 26788.04, 28087.24, 23228.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 148534.11}, {"label": "Altro", "m": [14000.0, 0.0, 0.0, 0.0, 0.0, 4500.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 18500.0}], "pl_cost": [{"label": "Affitti", "m": [28922.0, 28800.0, 28800.0, 29074.0, 28800.0, 28800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 173196.0}, {"label": "Personale", "m": [84457.9, 85430.19, 82663.58, 86545.64, 86218.86, 85315.69, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 510631.86}, {"label": "Noleggi&Leasing", "m": [5483.42, 5468.42, 5746.21, 87.95, 5468.42, 5600.18, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 27854.6}, {"label": "Abbonamenti & Servizi IT", "m": [556.44, 381.94, 181.44, 190.5, 609.73, 195.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 2115.75}, {"label": "Assicurazione", "m": [0.0, 0.0, 0.0, 4168.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 4168.0}, {"label": "Manutenzione", "m": [2651.0, 1146.4, 2363.15, 1836.89, 1200.0, 1302.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 10499.44}, {"label": "Consulenze Esterne", "m": [3210.21, 2360.71, 7155.17, 4360.71, 4513.78, 4590.32, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 26190.9}, {"label": "Sales&Marketing", "m": [1111.85, 545.29, 1538.33, 537.23, 692.79, 710.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 5135.49}, {"label": "Utenze", "m": [9490.12, 4728.2, 10040.9, 9409.89, 8457.65, 6310.27, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 48437.03}, {"label": "Altri Consumabili", "m": [2141.74, 2005.17, 3006.27, 1810.47, 3397.77, 1979.12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 14340.54}, {"label": "Spese Bancarie", "m": [1570.33, 950.6, 1425.6, 3193.0, 1064.2, 1347.71, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 9551.44}, {"label": "Altri oneri di gestione", "m": [5805.0, 509.95, 58.2, 2850.0, 69.0, 220.47, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "tot": 9512.62}], "weekly": [{"w": 1, "fatt": 26027.68, "costo": 4769.36, "margine": 21258.32, "mpct": 0.82, "Banco Gastronomia": 10075.93, "Banco Bar": 3654.39, "Banco Pizza": 3965.09, "Banco Salumeria": 2890.96, "Ristorazione": 1408.26, "Banco Pasticceria": 1291.77, "Vino": 1711.41, "Catering": 35.16, "Aperitivo": 179.25, "Prodotti da rivendita": 203.34, "Banco Pane": 72.2, "Altro": 0.0, "Non classificato": 539.92}, {"w": 2, "fatt": 45535.02, "costo": 8287.45, "margine": 37247.57, "mpct": 0.82, "Banco Gastronomia": 15997.47, "Banco Bar": 5605.88, "Banco Pizza": 5685.07, "Banco Salumeria": 5161.09, "Ristorazione": 2767.19, "Banco Pasticceria": 3059.63, "Vino": 2704.98, "Catering": 73.48, "Aperitivo": 338.48, "Prodotti da rivendita": 944.56, "Banco Pane": 139.69, "Altro": 0.0, "Non classificato": 3057.5}, {"w": 3, "fatt": 45067.29, "costo": 7697.27, "margine": 37370.02, "mpct": 0.83, "Banco Gastronomia": 15445.23, "Banco Bar": 5769.58, "Banco Pizza": 5326.73, "Banco Salumeria": 4798.33, "Ristorazione": 3683.69, "Banco Pasticceria": 2670.72, "Vino": 2558.1, "Catering": 1137.0, "Aperitivo": 234.8, "Prodotti da rivendita": 172.16, "Banco Pane": 182.55, "Altro": 0.0, "Non classificato": 3088.4}, {"w": 4, "fatt": 42345.23, "costo": 7749.39, "margine": 34595.84, "mpct": 0.82, "Banco Gastronomia": 15135.44, "Banco Bar": 5243.39, "Banco Pizza": 4779.13, "Banco Salumeria": 4446.92, "Ristorazione": 3723.2, "Banco Pasticceria": 2708.08, "Vino": 2742.85, "Catering": 93.87, "Aperitivo": 214.96, "Prodotti da rivendita": 213.11, "Banco Pane": 190.12, "Altro": 0.0, "Non classificato": 2854.16}, {"w": 5, "fatt": 56729.11, "costo": 7781.55, "margine": 48947.56, "mpct": 0.86, "Banco Gastronomia": 15707.75, "Banco Bar": 5997.22, "Banco Pizza": 4858.76, "Banco Salumeria": 4106.31, "Ristorazione": 2738.08, "Banco Pasticceria": 3037.74, "Vino": 2490.05, "Catering": 243.0, "Aperitivo": 294.94, "Prodotti da rivendita": 381.01, "Banco Pane": 224.82, "Altro": 14000.0, "Non classificato": 2649.43}, {"w": 6, "fatt": 45825.13, "costo": 8102.55, "margine": 37722.58, "mpct": 0.82, "Banco Gastronomia": 16973.9, "Banco Bar": 5907.48, "Banco Pizza": 4463.61, "Banco Salumeria": 4203.52, "Ristorazione": 3476.51, "Banco Pasticceria": 3013.68, "Vino": 2809.63, "Catering": 1446.0, "Aperitivo": 200.65, "Prodotti da rivendita": 331.74, "Banco Pane": 194.64, "Altro": 0.0, "Non classificato": 2803.77}, {"w": 7, "fatt": 47747.53, "costo": 8410.1, "margine": 39337.43, "mpct": 0.82, "Banco Gastronomia": 18199.16, "Banco Bar": 6364.22, "Banco Pizza": 5091.72, "Banco Salumeria": 4149.66, "Ristorazione": 3603.76, "Banco Pasticceria": 3217.44, "Vino": 3094.88, "Catering": 1343.0, "Aperitivo": 371.63, "Prodotti da rivendita": 116.97, "Banco Pane": 204.69, "Altro": 0.0, "Non classificato": 1990.4}, {"w": 8, "fatt": 47721.78, "costo": 9056.58, "margine": 38665.2, "mpct": 0.81, "Banco Gastronomia": 18552.35, "Banco Bar": 6041.88, "Banco Pizza": 5033.5, "Banco Salumeria": 4743.98, "Ristorazione": 3974.38, "Banco Pasticceria": 2824.4, "Vino": 3266.61, "Catering": 147.83, "Aperitivo": 335.35, "Prodotti da rivendita": 181.71, "Banco Pane": 211.29, "Altro": 0.0, "Non classificato": 2408.5}, {"w": 9, "fatt": 48928.41, "costo": 9000.39, "margine": 39928.02, "mpct": 0.82, "Banco Gastronomia": 16633.34, "Banco Bar": 6295.98, "Banco Pizza": 5504.87, "Banco Salumeria": 4637.67, "Ristorazione": 4383.09, "Banco Pasticceria": 2871.96, "Vino": 2984.12, "Catering": 1081.55, "Aperitivo": 251.62, "Prodotti da rivendita": 160.31, "Banco Pane": 210.76, "Altro": 0.0, "Non classificato": 3913.14}, {"w": 10, "fatt": 51158.8, "costo": 8721.64, "margine": 42437.16, "mpct": 0.83, "Banco Gastronomia": 17256.74, "Banco Bar": 6032.9, "Banco Pizza": 6073.49, "Banco Salumeria": 4649.89, "Ristorazione": 3760.69, "Banco Pasticceria": 2908.24, "Vino": 2503.5, "Catering": 4644.0, "Aperitivo": 344.42, "Prodotti da rivendita": 120.6, "Banco Pane": 174.17, "Altro": 0.0, "Non classificato": 2690.16}, {"w": 11, "fatt": 51098.04, "costo": 8996.62, "margine": 42101.42, "mpct": 0.82, "Banco Gastronomia": 17422.35, "Banco Bar": 5941.4, "Banco Pizza": 6971.47, "Banco Salumeria": 4606.69, "Ristorazione": 3522.72, "Banco Pasticceria": 2874.27, "Vino": 3576.21, "Catering": 2027.18, "Aperitivo": 358.74, "Prodotti da rivendita": 317.92, "Banco Pane": 173.79, "Altro": 0.0, "Non classificato": 3305.3}, {"w": 12, "fatt": 51735.24, "costo": 9165.86, "margine": 42569.38, "mpct": 0.82, "Banco Gastronomia": 19886.57, "Banco Bar": 6649.27, "Banco Pizza": 7293.52, "Banco Salumeria": 4105.81, "Ristorazione": 3217.69, "Banco Pasticceria": 3473.89, "Vino": 2660.16, "Catering": 669.59, "Aperitivo": 255.79, "Prodotti da rivendita": 175.31, "Banco Pane": 177.89, "Altro": 0.0, "Non classificato": 3169.75}, {"w": 13, "fatt": 53316.09, "costo": 8898.54, "margine": 44417.55, "mpct": 0.83, "Banco Gastronomia": 18480.39, "Banco Bar": 7142.4, "Banco Pizza": 7677.18, "Banco Salumeria": 4232.18, "Ristorazione": 4606.74, "Banco Pasticceria": 3413.36, "Vino": 2530.66, "Catering": 517.35, "Aperitivo": 285.17, "Prodotti da rivendita": 131.67, "Banco Pane": 158.76, "Altro": 0.0, "Non classificato": 4140.23}, {"w": 14, "fatt": 58972.02, "costo": 10103.65, "margine": 48868.37, "mpct": 0.83, "Banco Gastronomia": 17941.71, "Banco Bar": 6468.43, "Banco Pizza": 9494.2, "Banco Salumeria": 5750.61, "Ristorazione": 5159.34, "Banco Pasticceria": 4963.68, "Vino": 2767.17, "Catering": 1570.29, "Aperitivo": 311.69, "Prodotti da rivendita": 601.46, "Banco Pane": 167.03, "Altro": 0.0, "Non classificato": 3776.41}, {"w": 15, "fatt": 49191.53, "costo": 9341.65, "margine": 39849.88, "mpct": 0.81, "Banco Gastronomia": 18450.92, "Banco Bar": 7317.81, "Banco Pizza": 5011.85, "Banco Salumeria": 4334.55, "Ristorazione": 3673.14, "Banco Pasticceria": 2661.33, "Vino": 2912.14, "Catering": 40.29, "Aperitivo": 382.29, "Prodotti da rivendita": 284.24, "Banco Pane": 145.49, "Altro": 0.0, "Non classificato": 3977.48}, {"w": 16, "fatt": 45927.62, "costo": 8835.0, "margine": 37092.62, "mpct": 0.81, "Banco Gastronomia": 17145.38, "Banco Bar": 6959.43, "Banco Pizza": 3967.57, "Banco Salumeria": 4275.14, "Ristorazione": 3673.18, "Banco Pasticceria": 2677.39, "Vino": 2454.21, "Catering": 325.5, "Aperitivo": 323.32, "Prodotti da rivendita": 286.78, "Banco Pane": 183.11, "Altro": 0.0, "Non classificato": 3656.61}, {"w": 17, "fatt": 50415.86, "costo": 8979.14, "margine": 41436.72, "mpct": 0.82, "Banco Gastronomia": 17988.67, "Banco Bar": 6904.61, "Banco Pizza": 4197.18, "Banco Salumeria": 4871.34, "Ristorazione": 4754.15, "Banco Pasticceria": 2806.68, "Vino": 3230.3, "Catering": 2020.0, "Aperitivo": 316.34, "Prodotti da rivendita": 177.34, "Banco Pane": 149.32, "Altro": 0.0, "Non classificato": 2999.93}, {"w": 18, "fatt": 52385.59, "costo": 10370.66, "margine": 42014.93, "mpct": 0.8, "Banco Gastronomia": 18431.74, "Banco Bar": 7340.48, "Banco Pizza": 4874.33, "Banco Salumeria": 4882.71, "Ristorazione": 6020.95, "Banco Pasticceria": 2823.23, "Vino": 3740.83, "Catering": 1134.0, "Aperitivo": 369.56, "Prodotti da rivendita": 216.26, "Banco Pane": 141.59, "Altro": 0.0, "Non classificato": 2409.91}, {"w": 19, "fatt": 49295.05, "costo": 9067.92, "margine": 40227.13, "mpct": 0.82, "Banco Gastronomia": 19090.68, "Banco Bar": 7479.86, "Banco Pizza": 3959.83, "Banco Salumeria": 4204.92, "Ristorazione": 3759.48, "Banco Pasticceria": 2808.13, "Vino": 4199.14, "Catering": 464.7, "Aperitivo": 411.95, "Prodotti da rivendita": 192.4, "Banco Pane": 220.47, "Altro": 0.0, "Non classificato": 2503.49}, {"w": 20, "fatt": 42540.51, "costo": 7603.18, "margine": 34937.33, "mpct": 0.82, "Banco Gastronomia": 16213.13, "Banco Bar": 6943.24, "Banco Pizza": 4203.41, "Banco Salumeria": 3740.17, "Ristorazione": 2557.2, "Banco Pasticceria": 2439.69, "Vino": 2437.96, "Catering": 168.7, "Aperitivo": 399.41, "Prodotti da rivendita": 138.76, "Banco Pane": 168.27, "Altro": 0.0, "Non classificato": 3130.57}, {"w": 21, "fatt": 44161.66, "costo": 8135.39, "margine": 36026.27, "mpct": 0.82, "Banco Gastronomia": 15608.85, "Banco Bar": 6971.4, "Banco Pizza": 4160.92, "Banco Salumeria": 3404.61, "Ristorazione": 4652.27, "Banco Pasticceria": 3532.88, "Vino": 2284.77, "Catering": 1009.0, "Aperitivo": 244.0, "Prodotti da rivendita": 229.66, "Banco Pane": 159.14, "Altro": 0.0, "Non classificato": 1904.16}, {"w": 22, "fatt": 47684.15, "costo": 9230.2, "margine": 38453.95, "mpct": 0.81, "Banco Gastronomia": 17737.17, "Banco Bar": 7263.27, "Banco Pizza": 4438.47, "Banco Salumeria": 4309.9, "Ristorazione": 6038.5, "Banco Pasticceria": 2179.84, "Vino": 2098.83, "Catering": 1072.2, "Aperitivo": 219.05, "Prodotti da rivendita": 140.59, "Banco Pane": 143.55, "Altro": 0.0, "Non classificato": 2042.78}, {"w": 23, "fatt": 51132.31, "costo": 8939.69, "margine": 42192.62, "mpct": 0.83, "Banco Gastronomia": 15821.14, "Banco Bar": 6834.75, "Banco Pizza": 3759.89, "Banco Salumeria": 4526.78, "Ristorazione": 6292.75, "Banco Pasticceria": 2449.97, "Vino": 2329.38, "Catering": 5881.01, "Aperitivo": 182.9, "Prodotti da rivendita": 76.06, "Banco Pane": 98.8, "Altro": 0.0, "Non classificato": 2878.88}, {"w": 24, "fatt": 35064.51, "costo": 7265.46, "margine": 27799.05, "mpct": 0.79, "Banco Gastronomia": 13965.99, "Banco Bar": 5429.76, "Banco Pizza": 3406.08, "Banco Salumeria": 3370.32, "Ristorazione": 2670.99, "Banco Pasticceria": 2155.17, "Vino": 1863.39, "Catering": 331.15, "Aperitivo": 108.34, "Prodotti da rivendita": 126.68, "Banco Pane": 125.84, "Altro": 0.0, "Non classificato": 1510.8}, {"w": 25, "fatt": 35064.51, "costo": 7265.46, "margine": 27799.05, "mpct": 0.79, "Banco Gastronomia": 13965.99, "Banco Bar": 5429.76, "Banco Pizza": 3406.08, "Banco Salumeria": 3370.32, "Ristorazione": 2670.99, "Banco Pasticceria": 2155.17, "Vino": 1863.39, "Catering": 331.15, "Aperitivo": 108.34, "Prodotti da rivendita": 126.68, "Banco Pane": 125.84, "Altro": 0.0, "Non classificato": 1510.8}, {"w": 26, "fatt": 34784.67, "costo": 7001.09, "margine": 27783.58, "mpct": 0.8, "Banco Gastronomia": 12994.88, "Banco Bar": 5208.46, "Banco Pizza": 3300.5, "Banco Salumeria": 2991.57, "Ristorazione": 1962.71, "Banco Pasticceria": 2101.76, "Vino": 2100.95, "Catering": 1282.0, "Aperitivo": 161.17, "Prodotti da rivendita": 36.4, "Banco Pane": 107.47, "Altro": 1220.0, "Non classificato": 1316.8}, {"w": 27, "fatt": 33910.19, "costo": 7308.87, "margine": 26601.32, "mpct": 0.78, "Banco Gastronomia": 13321.38, "Banco Bar": 5113.34, "Banco Pizza": 3111.3, "Banco Salumeria": 3044.23, "Ristorazione": 4235.22, "Banco Pasticceria": 1787.46, "Vino": 1904.15, "Catering": 240.0, "Aperitivo": 191.07, "Prodotti da rivendita": 13.4, "Banco Pane": 117.13, "Altro": 0.0, "Non classificato": 831.51}], "riepilogo": {"fatt_tot": 1243765.53, "costo_prod": 226084.64, "margine": 1017680.89, "margine_pct": 0.82, "n_sett": 27.0, "fatt_medio": 46065.39, "best_wk": [58972.02, "Settimana 14"], "worst_wk": [26027.68, "Settimana 1"]}, "tops": {"Banco Gastronomia": {"tot": 444444.25, "items": [{"p": "Suppli pomodoro e mozzarella", "q": 20322.0, "f": 50637.1, "pct": 0.11, "c": 7315.92, "m": 0.86}, {"p": "Suppli ragu", "q": 12825.0, "f": 31924.41, "pct": 0.07, "c": 6669.0, "m": 0.79}, {"p": "Insalata di polpo", "q": 610.24, "f": 30361.51, "pct": 0.07, "c": 11350.5, "m": 0.63}, {"p": "Lasagna ragu", "q": 1023.04, "f": 27970.78, "pct": 0.06, "c": 8184.32, "m": 0.71}, {"p": "Polpo rosticciato", "q": 338.15, "f": 25234.53, "pct": 0.06, "c": 14269.76, "m": 0.43}, {"p": "Verdure di stagione", "q": 978.54, "f": 21361.13, "pct": 0.05, "c": 0.0, "m": 1.0}, {"p": "Insalata di mare", "q": 388.54, "f": 19289.82, "pct": 0.04, "c": 8781.05, "m": 0.54}, {"p": "Roastbeef", "q": 242.34, "f": 13904.28, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Vitello tonnato", "q": 242.57, "f": 13500.82, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Pollo e patate", "q": 422.23, "f": 10457.45, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Patate", "q": 581.91, "f": 10419.63, "pct": 0.02, "c": 1745.72, "m": 0.83}, {"p": "Polletto", "q": 385.06, "f": 9549.67, "pct": 0.02, "c": 5756.59, "m": 0.4}, {"p": "Filetto di baccala", "q": 1707.0, "f": 8490.72, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Cannelloni ricotta e spinaci", "q": 283.51, "f": 8318.28, "pct": 0.02, "c": 2041.3, "m": 0.75}, {"p": "Carciofi romana", "q": 1426.0, "f": 7092.24, "pct": 0.02, "c": 3565.0, "m": 0.5}]}, "Banco Bar": {"tot": 168310.59, "items": [{"p": "Espresso", "q": 39041.0, "f": 50676.98, "pct": 0.3, "c": 8198.61, "m": 0.84}, {"p": "Acqua", "q": 16807.0, "f": 16736.44, "pct": 0.1, "c": 3193.33, "m": 0.81}, {"p": "Cappuccino", "q": 9154.0, "f": 16459.88, "pct": 0.1, "c": 0.0, "m": 1.0}, {"p": "Bicchiere Birra 0 3", "q": 2627.0, "f": 12559.7, "pct": 0.07, "c": 0.0, "m": 1.0}, {"p": "Latta Spritz", "q": 802.0, "f": 7194.87, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Succhi di frutta", "q": 1554.0, "f": 6194.32, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Molecola vetro 33CL", "q": 1837.0, "f": 5474.36, "pct": 0.03, "c": 1892.11, "m": 0.65}, {"p": "The infuso caldo", "q": 766.0, "f": 3062.25, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Bicchiere German pils 33 cl", "q": 490.0, "f": 2405.77, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Doppio espresso", "q": 886.0, "f": 2302.19, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Bicchiere Birra 0 17", "q": 696.0, "f": 2033.66, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Gin Tonic", "q": 230.0, "f": 1971.1, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Caffe latte", "q": 843.0, "f": 1854.43, "pct": 0.01, "c": 421.5, "m": 0.77}, {"p": "Cappuccino vegetale", "q": 839.0, "f": 1843.96, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Caffe americano", "q": 1187.0, "f": 1779.9, "pct": 0.01, "c": 237.4, "m": 0.87}]}, "Banco Pizza": {"tot": 134015.75, "items": [{"p": "Margherita", "q": 812.31, "f": 12121.1, "pct": 0.09, "c": 4134.64, "m": 0.66}, {"p": "Colomba classica Gabrini", "q": 504.0, "f": 9908.37, "pct": 0.07, "c": 0.0, "m": 1.0}, {"p": "Focaccia alta bianca", "q": 433.77, "f": 9351.23, "pct": 0.07, "c": 0.0, "m": 1.0}, {"p": "Crostino con prosciutto cotto e fiordilatte", "q": 369.87, "f": 6255.02, "pct": 0.05, "c": 2311.67, "m": 0.63}, {"p": "Bianca", "q": 592.48, "f": 5608.18, "pct": 0.04, "c": 1238.29, "m": 0.78}, {"p": "Pizza Patate a sfoglia", "q": 371.71, "f": 5530.62, "pct": 0.04, "c": 992.46, "m": 0.82}, {"p": "Pizza rossa e bufala", "q": 194.14, "f": 4842.55, "pct": 0.04, "c": 1325.95, "m": 0.73}, {"p": "Pizza Mortadella", "q": 201.75, "f": 4003.68, "pct": 0.03, "c": 1099.56, "m": 0.73}, {"p": "Pizza speck e provola", "q": 125.55, "f": 3867.98, "pct": 0.03, "c": 911.46, "m": 0.76}, {"p": "Pizza ripiena cotto treccai di bufala e rughetta", "q": 159.58, "f": 3795.2, "pct": 0.03, "c": 1225.57, "m": 0.68}, {"p": "Focaccina tonda rossa", "q": 2477.0, "f": 3719.73, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Pizza cipolla assoluta e mozzarella", "q": 147.96, "f": 3096.98, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Pizza di pasqua stile Civitavecchia", "q": 446.0, "f": 3037.5, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Pizza roastbeef e confettura di cipolle rosse", "q": 95.14, "f": 3027.69, "pct": 0.02, "c": 1094.09, "m": 0.64}, {"p": "Rossa con pomodoro e origano", "q": 252.49, "f": 3003.36, "pct": 0.02, "c": 631.22, "m": 0.79}]}, "Banco Salumeria": {"tot": 113810.18, "items": [{"p": "Prosciutto di Parma 24 mesi Fontana", "q": 212.02, "f": 8432.15, "pct": 0.07, "c": 4121.59, "m": 0.51}, {"p": "Panino da 7 euro", "q": 1169.0, "f": 8121.55, "pct": 0.07, "c": 0.0, "m": 1.0}, {"p": "Mozzarella bufala terracina 250 gr", "q": 1207.0, "f": 7490.6, "pct": 0.07, "c": 4236.57, "m": 0.43}, {"p": "Mozzarella bufala casertana loffredo", "q": 1147.0, "f": 5988.07, "pct": 0.05, "c": 3876.86, "m": 0.35}, {"p": "Mozzarella di Bufala a peso terracina", "q": 141.97, "f": 3814.88, "pct": 0.03, "c": 1993.26, "m": 0.48}, {"p": "Prosciutto di Parma Gazzolo", "q": 75.81, "f": 3742.47, "pct": 0.03, "c": 1529.01, "m": 0.59}, {"p": "Uova fresche confezione 4", "q": 624.0, "f": 3334.19, "pct": 0.03, "c": 1921.92, "m": 0.42}, {"p": "Parmigiano Reggiano Biologico 30 mesi", "q": 76.1, "f": 3043.68, "pct": 0.03, "c": 1424.55, "m": 0.53}, {"p": "Bresaola di manzo punta d'anca Tito Speck", "q": 41.22, "f": 2891.78, "pct": 0.03, "c": 1786.8, "m": 0.38}, {"p": "Culaccia Salumificio Rossi", "q": 46.22, "f": 2429.48, "pct": 0.02, "c": 1118.52, "m": 0.54}, {"p": "Primo Sale Maceroni", "q": 101.41, "f": 2407.66, "pct": 0.02, "c": 1476.59, "m": 0.39}, {"p": "Parmigiano Reggiano Biologico 24 mesi", "q": 59.14, "f": 2207.43, "pct": 0.02, "c": 1076.31, "m": 0.51}, {"p": "Stracchino Maceroni", "q": 82.85, "f": 2196.47, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Cotto60", "q": 54.05, "f": 2149.41, "pct": 0.02, "c": 1078.76, "m": 0.5}, {"p": "Pecorino Romano DOL", "q": 62.98, "f": 2092.88, "pct": 0.02, "c": 0.0, "m": 1.0}]}, "Ristorazione": {"tot": 102986.87, "items": [{"p": "Pane gabrini", "q": 5227.6, "f": 23005.0, "pct": 0.22, "c": 6116.29, "m": 0.73}, {"p": "Cena giostra", "q": 220.0, "f": 13011.0, "pct": 0.13, "c": 0.0, "m": 1.0}, {"p": "Pane Cena", "q": 2360.0, "f": 5806.61, "pct": 0.06, "c": 0.0, "m": 1.0}, {"p": "Maiali italiani pregiati", "q": 271.0, "f": 4820.36, "pct": 0.05, "c": 0.0, "m": 1.0}, {"p": "Picanha alla brace", "q": 169.0, "f": 4129.69, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Tutti i latti", "q": 192.0, "f": 3796.07, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Carbonara", "q": 184.0, "f": 2698.49, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Roast beef ponzu", "q": 151.0, "f": 2693.05, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Selezione molli freschi italiani", "q": 132.0, "f": 2341.84, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Trippa di polpo alla cacciatora", "q": 42.9, "f": 2119.6, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Suppli pomodoro sera", "q": 534.0, "f": 2114.14, "pct": 0.02, "c": 267.0, "m": 0.87}, {"p": "Evento CRLAB", "q": 41.0, "f": 2050.0, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Tagliolino burro", "q": 130.0, "f": 2010.83, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Amatriciana", "q": 144.0, "f": 1969.4, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Bufala e prosciutto", "q": 64.0, "f": 1815.25, "pct": 0.02, "c": 0.0, "m": 1.0}]}, "Banco Pasticceria": {"tot": 74907.56, "items": [{"p": "Tiramisu", "q": 1258.0, "f": 6404.6, "pct": 0.09, "c": 0.0, "m": 1.0}, {"p": "Pezzo brownie", "q": 1369.0, "f": 4933.88, "pct": 0.07, "c": 0.0, "m": 1.0}, {"p": "Cinnamon roll", "q": 1365.0, "f": 4754.79, "pct": 0.06, "c": 0.0, "m": 1.0}, {"p": "Fetta di carrot cake", "q": 1290.0, "f": 4508.67, "pct": 0.06, "c": 0.0, "m": 1.0}, {"p": "Fetta di torta della nonna", "q": 782.0, "f": 3500.95, "pct": 0.05, "c": 0.0, "m": 1.0}, {"p": "Fetta di Banana bread", "q": 939.0, "f": 3278.35, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Fetta crostata marmellata", "q": 1077.0, "f": 3216.72, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Cornetto ripieno", "q": 2134.0, "f": 3195.87, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Muffin integrale ai frutti di bosco", "q": 1494.0, "f": 2975.28, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Priscilla", "q": 1283.0, "f": 2817.37, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Veneziana", "q": 2063.0, "f": 2679.17, "pct": 0.04, "c": 0.0, "m": 1.0}, {"p": "Maritozzo", "q": 1457.0, "f": 2451.18, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Fetta crumble vegano", "q": 517.0, "f": 2327.04, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Panbrioche", "q": 144.96, "f": 2155.19, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Cookies", "q": 1056.0, "f": 2100.5, "pct": 0.03, "c": 0.0, "m": 1.0}]}, "Vino": {"tot": 71819.77, "items": [{"p": "Calice vino Lentico", "q": 742.0, "f": 4401.14, "pct": 0.06, "c": 1224.3, "m": 0.72}, {"p": "Calice La Cattiva Bianco", "q": 669.0, "f": 3989.66, "pct": 0.06, "c": 1103.85, "m": 0.72}, {"p": "Calice L Ultimo Imperatore", "q": 624.0, "f": 3724.47, "pct": 0.05, "c": 1404.0, "m": 0.62}, {"p": "Calice di Spensierata Franciacorta", "q": 350.0, "f": 3444.56, "pct": 0.05, "c": 0.0, "m": 1.0}, {"p": "Calice Dennis la cattiva", "q": 371.0, "f": 2213.42, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Calice vino Casette cantina indigeno", "q": 293.0, "f": 1755.8, "pct": 0.02, "c": 483.45, "m": 0.72}, {"p": "Champagne Christian Lepitre", "q": 39.0, "f": 1660.05, "pct": 0.02, "c": 1193.08, "m": 0.28}, {"p": "Calice Orangino la cattiva", "q": 230.0, "f": 1363.82, "pct": 0.02, "c": 483.0, "m": 0.65}, {"p": "L Ultimo Imperatore Maridole Bianco", "q": 55.0, "f": 1349.67, "pct": 0.02, "c": 573.65, "m": 0.57}, {"p": "Franciacorta Spensierata Brut", "q": 36.0, "f": 1343.9, "pct": 0.02, "c": 742.32, "m": 0.45}, {"p": "Morandin Lentico", "q": 79.0, "f": 1291.24, "pct": 0.02, "c": 626.47, "m": 0.51}, {"p": "Calice Quasi sempre rosso", "q": 207.0, "f": 1240.3, "pct": 0.02, "c": 310.5, "m": 0.75}, {"p": "Calice Blonde Calek", "q": 156.0, "f": 1231.88, "pct": 0.02, "c": 421.2, "m": 0.66}, {"p": "Calice SANGIO MONTE BERNARDI", "q": 145.0, "f": 1155.34, "pct": 0.02, "c": 304.5, "m": 0.74}, {"p": "Calice Champagne", "q": 82.0, "f": 1138.17, "pct": 0.02, "c": 0.0, "m": 1.0}]}, "Aperitivo": {"tot": 7395.23, "items": [{"p": "La focaccia e la culaccia", "q": 566.0, "f": 3283.85, "pct": 0.44, "c": 0.0, "m": 1.0}, {"p": "Pizza fritta con Mortadella e parmigiano reggiano", "q": 338.0, "f": 1989.83, "pct": 0.27, "c": 0.0, "m": 1.0}, {"p": "Chips and cheese", "q": 235.0, "f": 1865.92, "pct": 0.25, "c": 0.0, "m": 1.0}, {"p": "Gamberetti fritti", "q": 26.0, "f": 252.63, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Tris aperitivo bis", "q": 1.0, "f": 3.0, "pct": 0.0, "c": 0.0, "m": 1.0}, {"p": "Tris aperitivo", "q": 473.0, "f": 0.0, "pct": 0.0, "c": 0.0, "m": 0.0}]}, "Prodotti da rivendita": {"tot": 6097.12, "items": [{"p": "Vasetto di sugo gabrini", "q": 361.0, "f": 2080.94, "pct": 0.34, "c": 0.0, "m": 1.0}, {"p": "Vasetto Cacio e pepe", "q": 123.0, "f": 1028.04, "pct": 0.17, "c": 0.0, "m": 1.0}, {"p": "Pallotte cacio e uova al sugo", "q": 28.77, "f": 867.75, "pct": 0.14, "c": 166.89, "m": 0.81}, {"p": "Olio torre rivera", "q": 17.0, "f": 367.75, "pct": 0.06, "c": 245.65, "m": 0.33}, {"p": "Tavoletta di cioccolato Disidente bean to bar", "q": 43.0, "f": 255.92, "pct": 0.04, "c": 167.7, "m": 0.34}, {"p": "Vassoio Minima", "q": 12.0, "f": 175.68, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "Pasta Verrigni trafilata oro", "q": 30.0, "f": 143.02, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Pasta Verrigni trafilata bronzo", "q": 36.0, "f": 136.5, "pct": 0.02, "c": 0.0, "m": 1.0}, {"p": "Palusci Olio I Oil", "q": 5.0, "f": 132.3, "pct": 0.02, "c": 83.2, "m": 0.37}, {"p": "Palusci Olio uomo di ferro", "q": 6.0, "f": 132.0, "pct": 0.02, "c": 73.92, "m": 0.44}, {"p": "Palusci Olio novus", "q": 6.0, "f": 130.0, "pct": 0.02, "c": 80.16, "m": 0.38}, {"p": "Tortellini Mauro Secondi", "q": 3.57, "f": 121.03, "pct": 0.02, "c": 60.08, "m": 0.5}, {"p": "Palusci Olio alchimia", "q": 5.0, "f": 108.09, "pct": 0.02, "c": 66.8, "m": 0.38}, {"p": "Olio Franci e.v.o. Maurino", "q": 3.0, "f": 74.4, "pct": 0.01, "c": 0.0, "m": 1.0}, {"p": "Agnolotti Mauro Secondi", "q": 2.02, "f": 68.14, "pct": 0.01, "c": 34.06, "m": 0.5}]}, "Banco Pane": {"tot": 4368.42, "items": [{"p": "Pane farro segale e saraceno con semi e cereali Mare", "q": 190.67, "f": 1706.27, "pct": 0.39, "c": 1088.71, "m": 0.36}, {"p": "Pane farro integrale mare", "q": 183.48, "f": 1368.45, "pct": 0.31, "c": 954.09, "m": 0.3}, {"p": "Bauletto di segale triticum", "q": 129.98, "f": 1162.04, "pct": 0.27, "c": 0.0, "m": 1.0}, {"p": "Pane da accompagnamento", "q": 132.0, "f": 131.66, "pct": 0.03, "c": 0.0, "m": 1.0}, {"p": "TOTALE", "q": 26408.61, "f": 113630.48, "pct": 118241.05, "c": 575931.76, "m": 147510.16}, {"p": "% sul totale", "q": 0.02, "f": 0.1, "pct": 0.11, "c": 0.52, "m": 0.13}]}}, "fasce": {"labels": {"01": "Apertura (—9)", "02": "Mattina (9–11)", "03": "Mattina tardi (11–12)", "04": "Pranzo (12–14:30)", "05": "Primo pomeriggio (14:30–16)", "06": "Pomeriggio (16–17:30)", "07": "Pomeriggio tardi (17:30–19)", "08": "Aperitivo (19–21)", "09": "Cena (21–22:30)", "10": "Cena tardi (22:30—)"}, "by_month": {"1": {"05": 15395.0, "07": 37351.0, "03": 16149.0, "10": 2323.0, "08": 9880.0, "09": 10591.0, "06": 17085.0, "02": 16759.0, "04": 52815.0, "001": 607.0, "01": 3337.0}, "2": {"05": 12946.0, "07": 21847.0, "03": 17794.0, "10": 1375.0, "08": 11032.0, "09": 11921.0, "06": 17844.0, "02": 15643.0, "04": 51022.0, "001": 882.0, "01": 4756.0}, "3": {"05": 16169.0, "07": 28120.0, "03": 21688.0, "10": 764.0, "08": 12261.0, "09": 15588.0, "06": 21383.0, "02": 20421.0, "04": 60354.0, "001": 936.0, "01": 4082.0}, "4": {"05": 15006.0, "07": 24838.0, "03": 19118.0, "10": 2489.0, "08": 13221.0, "09": 14171.0, "06": 19202.0, "02": 18607.0, "04": 55830.0, "001": 968.0, "01": 4398.0}, "5": {"05": 13951.0, "07": 20466.0, "03": 22002.0, "10": 3066.0, "08": 13137.0, "09": 13668.0, "06": 17420.0, "02": 21677.0, "04": 61259.0, "001": 983.0, "01": 4872.0}, "6": {"05": 9872.0, "07": 14889.0, "03": 21490.0, "10": 779.0, "08": 8549.0, "09": 9493.0, "06": 18604.0, "02": 20523.0, "04": 51964.0, "001": 949.0, "01": 4963.0}}, "by_dow": {"4": {"05": 15212.0, "07": 22974.0, "03": 15961.0, "10": 3005.0, "08": 10118.0, "09": 16673.0, "06": 16626.0, "02": 15145.0, "04": 53933.0, "001": 1086.0, "01": 5420.0}, "5": {"05": 13888.0, "07": 37638.0, "03": 23181.0, "10": 984.0, "08": 15195.0, "09": 17670.0, "06": 16797.0, "02": 21116.0, "04": 56518.0, "001": 699.0, "01": 4108.0}, "6": {"05": 12391.0, "07": 13981.0, "03": 20855.0, "10": 6.0, "08": 6747.0, "09": 29.0, "06": 14641.0, "02": 21498.0, "04": 48157.0, "001": 0.0, "01": 157.0}, "0": {"05": 10071.0, "07": 17684.0, "03": 16647.0, "10": 4076.0, "08": 7215.0, "09": 9897.0, "06": 17607.0, "02": 15085.0, "04": 43065.0, "001": 816.0, "01": 4549.0}, "1": {"05": 10737.0, "07": 17991.0, "03": 14846.0, "10": 934.0, "08": 8762.0, "09": 10603.0, "06": 17907.0, "02": 14195.0, "04": 45476.0, "001": 802.0, "01": 3925.0}, "2": {"05": 10389.0, "07": 16548.0, "03": 13550.0, "10": 510.0, "08": 10497.0, "09": 10665.0, "06": 13621.0, "02": 13823.0, "04": 42930.0, "001": 1063.0, "01": 4399.0}, "3": {"05": 10651.0, "07": 20694.0, "03": 13200.0, "10": 1282.0, "08": 9547.0, "09": 9896.0, "06": 14339.0, "02": 12768.0, "04": 43164.0, "001": 859.0, "01": 3850.0}}, "dow_count": {"4": 26, "5": 26, "6": 25, "0": 26, "1": 26, "2": 25, "3": 25}, "month_count": {"1": 30, "2": 28, "3": 31, "4": 29, "5": 31, "6": 30}}, "q1": [{"label": "RICAVI TOTALI", "y24": 408676.34, "y25": 437189.7, "y26": 530513.74}, {"label": "Food", "y24": 336128.51, "y25": 363485.45, "y26": 412684.02}, {"label": "Beverage", "y24": 72547.83, "y25": 73704.25, "y26": 103829.72}, {"label": "Altro", "y24": 0.0, "y25": 0.0, "y26": 14000.0}, {"label": "COSTI PRODUZIONE", "y24": 245171.78, "y25": 178905.89, "y26": 194365.84}, {"label": "Costi Food", "y24": 191860.89, "y25": 153529.53, "y26": 157048.15}, {"label": "Consumabili Food", "y24": 18299.9, "y25": 7746.49, "y26": 11447.28}, {"label": "Costi Beverage", "y24": 33906.67, "y25": 16889.05, "y26": 25600.08}, {"label": "Consumabili Beverage", "y24": 1104.32, "y25": 740.82, "y26": 270.33}, {"label": "MACO", "y24": 163504.56, "y25": 258283.81, "y26": 336147.9}, {"label": "COSTI GENERALI", "y24": 154417.6, "y25": 143170.21, "y26": 168154.06}, {"label": "Affitti", "y24": 63274.0, "y25": 63274.0, "y26": 86522.0}, {"label": "Servizi", "y24": 60890.88, "y25": 41477.14, "y26": 39899.98}, {"label": "Utenze", "y24": 20036.91, "y25": 25808.9, "y26": 24259.22}, {"label": "Altri costi", "y24": 10215.81, "y25": 12610.17, "y26": 17472.86}, {"label": "PERSONALE", "y24": 260188.57, "y25": 255578.44, "y26": 252551.67}, {"label": "EBITDA", "y24": -251101.62, "y25": -140464.84, "y26": -84557.83}], "q2": [{"label": "RICAVI TOTALI", "y24": 368969.99, "y25": 425334.98, "y26": 511658.89}, {"label": "Food", "y24": 299137.16, "y25": 338873.49, "y26": 398070.92}, {"label": "Beverage", "y24": 69832.83, "y25": 86461.49, "y26": 109087.97}, {"label": "Altro", "y24": 0.0, "y25": 0.0, "y26": 4500.0}, {"label": "COSTI PRODUZIONE", "y24": 207400.49, "y25": 201888.45, "y26": 192137.43}, {"label": "Costi Food", "y24": 173089.89, "y25": 155999.75, "y26": 159943.68}, {"label": "Consumabili Food", "y24": 13137.18, "y25": 9207.32, "y26": 6194.36}, {"label": "Costi Beverage", "y24": 20969.42, "y25": 35999.44, "y26": 25650.17}, {"label": "Consumabili Beverage", "y24": 204.0, "y25": 681.94, "y26": 349.22}, {"label": "MACO", "y24": 161569.5, "y25": 223446.53, "y26": 319521.46}, {"label": "COSTI GENERALI", "y24": 139805.15, "y25": 141968.34, "y26": 162847.75}, {"label": "Affitti", "y24": 63000.0, "y25": 63274.0, "y26": 86674.0}, {"label": "Servizi", "y24": 47797.72, "y25": 48985.1, "y26": 36249.17}, {"label": "Utenze", "y24": 18723.39, "y25": 11386.12, "y26": 24177.81}, {"label": "Altri costi", "y24": 10284.04, "y25": 18323.12, "y26": 15746.77}, {"label": "PERSONALE", "y24": 273800.35, "y25": 271974.92, "y26": 258080.19}, {"label": "EBITDA", "y24": -252035.99, "y25": -190496.73, "y26": -101406.48}], "bu_cat": {"Banco Salumeria": {"ytd": 110310.0, "fy": 231860.92}, "Banco Gastronomia": {"ytd": 410341.11, "fy": 929901.57}, "Banco Pizza": {"ytd": 138707.44, "fy": 295955.28}, "Banco Pane": {"ytd": 11748.95, "fy": 25518.94}, "Banco Pasticceria": {"ytd": 71979.08, "fy": 151524.19}, "Aperitivo": {"ytd": 7087.38, "fy": 14745.94}, "Ristorazione": {"ytd": 68676.1, "fy": 150556.52}, "Catering": {"ytd": 28421.71, "fy": 52551.77}, "Prodotti da rivendita": {"ytd": 5947.8, "fy": 21569.48}, "Vino": {"ytd": 64947.93, "fy": 144841.75}, "Banco Bar": {"ytd": 151281.72, "fy": 330022.99}, "Altro": {"ytd": 17500.0, "fy": 28000.0}}, "bu_fy": {"ricavi": 2377049.35, "ebitda": -167471.68, "maco": 1578399.55, "nat": -171678.67}, "fy25": {"ricavi": 1866921.04, "ebitda": -614205.67}};
+
+/* ---------- helpers ---------- */
+const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const N26 = 6; // mesi disponibili 2026
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
+const eur0 = new Intl.NumberFormat('it-IT', {maximumFractionDigits: 0});
+function fmtEur(v){ return (v < 0 ? '−' : '') + '€ ' + eur0.format(Math.abs(Math.round(v))); }
+function fmtEurS(v){ // compact for axes/labels
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v/1e6).toLocaleString('it-IT',{maximumFractionDigits:1}) + ' M';
+  if (a >= 1e3) return Math.round(v/1e3).toLocaleString('it-IT') + ' k';
+  return eur0.format(Math.round(v));
+}
+function fmtPct(v, dec=1){ return (v*100).toLocaleString('it-IT',{maximumFractionDigits:dec, minimumFractionDigits:0}) + '%'; }
+function fmtDelta(v){ return (v>0?'+':'') + fmtPct(v); }
+function svgEl(tag, attrs){ const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function niceTicks(min, max, n=5){
+  if (min > 0) min = 0; if (max < 0) max = 0;
+  const span = max - min || 1;
+  const step0 = span / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  let step = mag;
+  for (const m of [1,2,2.5,5,10]) { if (step0 <= m*mag) { step = m*mag; break; } }
+  const lo = Math.floor(min/step)*step, hi = Math.ceil(max/step)*step;
+  const ticks = []; for (let t = lo; t <= hi + step*0.001; t += step) ticks.push(Math.round(t*100)/100);
+  return {lo, hi, ticks};
+}
+const tip = $('#tip');
+function showTip(x, y, html){ tip.innerHTML = ''; tip.appendChild(html); tip.style.display = 'block';
+  const r = tip.getBoundingClientRect();
+  let px = x + 14, py = y + 14;
+  if (px + r.width > innerWidth - 8) px = x - r.width - 14;
+  if (py + r.height > innerHeight - 8) py = y - r.height - 14;
+  tip.style.left = px + 'px'; tip.style.top = py + 'px';
+}
+function hideTip(){ tip.style.display = 'none'; }
+function tipContent(title, rows){
+  const f = document.createDocumentFragment();
+  const t = document.createElement('div'); t.className = 't'; t.textContent = title; f.appendChild(t);
+  rows.forEach(([color, name, val]) => {
+    const r = document.createElement('div'); r.className = 'row';
+    const k = document.createElement('span'); k.className = 'k'; k.style.background = color; r.appendChild(k);
+    const n = document.createElement('span'); n.className = 'nm'; n.textContent = name; r.appendChild(n);
+    const v = document.createElement('span'); v.className = 'v'; v.textContent = val; r.appendChild(v);
+    f.appendChild(r);
+  });
+  return f;
+}
+
+/* ---------- card factory with table view ---------- */
+const chartRegistry = new Map();
+function register(el, fn){ chartRegistry.set(el, fn); }
+function renderAll(){ chartRegistry.forEach((fn, el) => { if (el.isConnected) fn(); }); }
+function makeCard(parent, {title, sub, table}){
+  const card = document.createElement('div'); card.className = 'card';
+  const head = document.createElement('div'); head.className = 'chead';
+  const hd = document.createElement('div');
+  const h3 = document.createElement('h3'); h3.textContent = title; hd.appendChild(h3);
+  if (sub) { const s = document.createElement('div'); s.className = 'sub'; s.textContent = sub; hd.appendChild(s); }
+  head.appendChild(hd);
+  let tblBtn = null, showingTable = false;
+  const legend = document.createElement('div');
+  const box = document.createElement('div'); box.className = 'chartbox';
+  const tbl = document.createElement('div'); tbl.className = 'tblwrap'; tbl.style.display = 'none';
+  if (table) {
+    tblBtn = document.createElement('button'); tblBtn.className = 'tblBtn'; tblBtn.textContent = 'Tabella';
+    tblBtn.addEventListener('click', () => {
+      showingTable = !showingTable;
+      box.style.display = showingTable ? 'none' : '';
+      legend.style.display = showingTable ? 'none' : '';
+      tbl.style.display = showingTable ? '' : 'none';
+      tblBtn.textContent = showingTable ? 'Grafico' : 'Tabella';
+    });
+    head.appendChild(tblBtn);
+  }
+  card.appendChild(head); card.appendChild(legend); card.appendChild(box); card.appendChild(tbl);
+  parent.appendChild(card);
+  if (table) buildTable(tbl, table.headers, table.rows);
+  return {box, legend};
+}
+function buildTable(el, headers, rows){
+  const t = document.createElement('table'); t.className = 'dv';
+  const thr = document.createElement('tr');
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; thr.appendChild(th); });
+  t.appendChild(thr);
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    if (row.strong) tr.className = 'strong';
+    row.cells.forEach((c, i) => {
+      const td = document.createElement('td');
+      td.textContent = c;
+      if (i > 0 && typeof c === 'string' && (c.startsWith('-') || c.startsWith('−'))) td.className = 'neg';
+      tr.appendChild(td);
+    });
+    t.appendChild(tr);
+  });
+  el.innerHTML = ''; el.appendChild(t);
+}
+function setLegend(el, items){
+  el.className = 'legend';
+  el.innerHTML = '';
+  items.forEach(([color, name, kind]) => {
+    const li = document.createElement('span'); li.className = 'li';
+    const sw = document.createElement('span'); sw.className = kind === 'line' ? 'ln' : 'sw'; sw.style.background = color;
+    li.appendChild(sw);
+    const nm = document.createElement('span'); nm.textContent = name; li.appendChild(nm);
+    el.appendChild(li);
+  });
+}
+
+/* rounded-at-data-end bar path (square at baseline) */
+function barPath(x, yBase, w, val, y0, r){
+  // val>=0: top rounded; val<0: bottom rounded. yBase = y(value), y0 = y(0)
+  const top = Math.min(yBase, y0), bot = Math.max(yBase, y0), h = Math.max(bot - top, 0.5);
+  r = Math.min(r, w/2, h);
+  if (yBase <= y0) { // grows up
+    return `M ${x} ${bot} L ${x} ${top+r} Q ${x} ${top} ${x+r} ${top} L ${x+w-r} ${top} Q ${x+w} ${top} ${x+w} ${top+r} L ${x+w} ${bot} Z`;
+  } else { // grows down
+    return `M ${x} ${top} L ${x+w} ${top} L ${x+w} ${bot-r} Q ${x+w} ${bot} ${x+w-r} ${bot} L ${x+r} ${bot} Q ${x} ${bot} ${x} ${bot-r} Z`;
+  }
+}
+
+/* ---------- LINE CHART ---------- */
+function lineChart(el, cfg){
+  function render(){
+    el.innerHTML = '';
+    const W = el.clientWidth || 500, H = cfg.height || 260;
+    const m = {t: 14, r: 16, b: 26, l: 52};
+    const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, width: W, height: H});
+    const labels = cfg.labels;
+    let vals = [];
+    cfg.series.forEach(s => s.values.forEach(v => { if (v != null) vals.push(v); }));
+    const {lo, hi, ticks} = niceTicks(Math.min(...vals), Math.max(...vals), 5);
+    const x = i => m.l + (labels.length === 1 ? 0.5 : i/(labels.length-1)) * (W - m.l - m.r);
+    const y = v => m.t + (1 - (v - lo)/(hi - lo)) * (H - m.t - m.b);
+    ticks.forEach(t => {
+      svg.appendChild(svgEl('line', {x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? css('--axis') : css('--grid'), 'stroke-width': 1}));
+      const tx = svgEl('text', {x: m.l - 8, y: y(t) + 3.5, 'text-anchor': 'end', 'font-size': 10.5, fill: css('--muted'), style: 'font-variant-numeric: tabular-nums'});
+      tx.textContent = fmtEurS(t); svg.appendChild(tx);
+    });
+    labels.forEach((lb, i) => {
+      if (labels.length > 14 && i % 2 === 1) return;
+      const tx = svgEl('text', {x: x(i), y: H - 8, 'text-anchor': 'middle', 'font-size': 10.5, fill: css('--muted')});
+      tx.textContent = lb; svg.appendChild(tx);
+    });
+    cfg.series.forEach(s => {
+      let d = '', started = false;
+      s.values.forEach((v, i) => { if (v == null) return; d += (started ? ' L ' : 'M ') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); started = true; });
+      svg.appendChild(svgEl('path', {d, fill: 'none', stroke: s.color(), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}));
+      // end marker + direct label
+      let li = s.values.length - 1; while (li >= 0 && s.values[li] == null) li--;
+      if (li >= 0) {
+        svg.appendChild(svgEl('circle', {cx: x(li), cy: y(s.values[li]), r: 4, fill: s.color(), stroke: css('--surface-1'), 'stroke-width': 2}));
+      }
+    });
+    // crosshair + tooltip
+    const cross = svgEl('line', {y1: m.t, y2: H - m.b, stroke: css('--axis'), 'stroke-width': 1, visibility: 'hidden'});
+    svg.appendChild(cross);
+    const overlay = svgEl('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent'});
+    overlay.addEventListener('pointermove', ev => {
+      const pt = svg.getBoundingClientRect();
+      const px = ev.clientX - pt.left;
+      let best = 0, bd = 1e9;
+      labels.forEach((_, i) => { const d = Math.abs(x(i) - px); if (d < bd) { bd = d; best = i; } });
+      cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best)); cross.setAttribute('visibility', 'visible');
+      const rows = cfg.series.filter(s => s.values[best] != null).map(s => [s.color(), s.name, cfg.fmt ? cfg.fmt(s.values[best]) : fmtEur(s.values[best])]);
+      showTip(ev.clientX, ev.clientY, tipContent(cfg.tipTitle ? cfg.tipTitle(best) : labels[best], rows));
+    });
+    overlay.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
+    svg.appendChild(overlay);
+    el.appendChild(svg);
+  }
+  register(el, render); render();
+}
+
+/* ---------- BAR CHART (vertical, single or grouped) ---------- */
+function barChart(el, cfg){
+  function render(){
+    el.innerHTML = '';
+    const W = el.clientWidth || 500, H = cfg.height || 260;
+    const m = {t: cfg.topPad || 20, r: 12, b: 26, l: 52};
+    const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, width: W, height: H});
+    const labels = cfg.labels, nS = cfg.series.length;
+    let vals = [];
+    cfg.series.forEach(s => s.values.forEach(v => { if (v != null) vals.push(v); }));
+    const {lo, hi, ticks} = niceTicks(Math.min(0, ...vals), Math.max(0, ...vals), 5);
+    const y = v => m.t + (1 - (v - lo)/(hi - lo)) * (H - m.t - m.b);
+    const plotW = W - m.l - m.r, band = plotW / labels.length;
+    const gap = 2, thick = Math.min(24, (band - 8 - gap*(nS-1)) / nS);
+    const groupW = thick*nS + gap*(nS-1);
+    ticks.forEach(t => {
+      svg.appendChild(svgEl('line', {x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? css('--axis') : css('--grid'), 'stroke-width': 1}));
+      const tx = svgEl('text', {x: m.l - 8, y: y(t) + 3.5, 'text-anchor': 'end', 'font-size': 10.5, fill: css('--muted'), style: 'font-variant-numeric: tabular-nums'});
+      tx.textContent = fmtEurS(t); svg.appendChild(tx);
+    });
+    const labelEvery = Math.ceil(labels.length / 16);
+    labels.forEach((lb, i) => {
+      if (i % labelEvery !== 0) return;
+      const cx = m.l + band*i + band/2;
+      const tx = svgEl('text', {x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 10.5, fill: css('--muted')});
+      tx.textContent = lb; svg.appendChild(tx);
+    });
+    labels.forEach((lb, i) => {
+      const gx = m.l + band*i + (band - groupW)/2;
+      cfg.series.forEach((s, si) => {
+        const v = s.values[i]; if (v == null) return;
+        const bx = gx + si*(thick+gap);
+        const fill = s.colors ? s.colors[i]() : s.color();
+        svg.appendChild(svgEl('path', {d: barPath(bx, y(v), thick, v, y(0), 4), fill}));
+      });
+      // hit area per band
+      const hit = svgEl('rect', {x: m.l + band*i, y: m.t, width: band, height: H - m.t - m.b, fill: 'transparent'});
+      hit.addEventListener('pointermove', ev => {
+        const rows = cfg.series.filter(s => s.values[i] != null).map(s => [(s.colors ? s.colors[i]() : s.color()), s.name, cfg.fmt ? cfg.fmt(s.values[i]) : fmtEur(s.values[i])]);
+        showTip(ev.clientX, ev.clientY, tipContent(cfg.tipTitle ? cfg.tipTitle(i) : lb, rows));
+      });
+      hit.addEventListener('pointerleave', hideTip);
+      svg.appendChild(hit);
+    });
+    // selective direct labels
+    (cfg.directLabels || []).forEach(([i, si, txt]) => {
+      const gx = m.l + band*i + (band - groupW)/2 + si*(thick+gap) + thick/2;
+      const v = cfg.series[si].values[i];
+      const above = v >= 0;
+      const tx = svgEl('text', {x: gx, y: y(v) + (above ? -6 : 12), 'text-anchor': 'middle', 'font-size': 10.5, 'font-weight': 600, fill: css('--ink-2'), style: 'font-variant-numeric: tabular-nums'});
+      tx.textContent = txt; svg.appendChild(tx);
+    });
+    el.appendChild(svg);
+  }
+  register(el, render); render();
+}
+
+/* ---------- STACKED BAR ---------- */
+function stackedBar(el, cfg){
+  function render(){
+    el.innerHTML = '';
+    const W = el.clientWidth || 500, H = cfg.height || 280;
+    const m = {t: 14, r: 12, b: 26, l: 52};
+    const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, width: W, height: H});
+    const labels = cfg.labels;
+    const totals = labels.map((_, i) => cfg.series.reduce((a, s) => a + (s.values[i] || 0), 0));
+    const {lo, hi, ticks} = niceTicks(0, Math.max(...totals), 5);
+    const y = v => m.t + (1 - (v - lo)/(hi - lo)) * (H - m.t - m.b);
+    const plotW = W - m.l - m.r, band = plotW / labels.length;
+    const thick = Math.min(24, band - 8);
+    ticks.forEach(t => {
+      svg.appendChild(svgEl('line', {x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? css('--axis') : css('--grid'), 'stroke-width': 1}));
+      const tx = svgEl('text', {x: m.l - 8, y: y(t) + 3.5, 'text-anchor': 'end', 'font-size': 10.5, fill: css('--muted'), style: 'font-variant-numeric: tabular-nums'});
+      tx.textContent = fmtEurS(t); svg.appendChild(tx);
+    });
+    const labelEvery = Math.ceil(labels.length / 16);
+    labels.forEach((lb, i) => {
+      if (i % labelEvery !== 0) return;
+      const tx = svgEl('text', {x: m.l + band*i + band/2, y: H - 8, 'text-anchor': 'middle', 'font-size': 10.5, fill: css('--muted')});
+      tx.textContent = lb; svg.appendChild(tx);
+    });
+    labels.forEach((lb, i) => {
+      const bx = m.l + band*i + (band - thick)/2;
+      let acc = 0;
+      cfg.series.forEach((s, si) => {
+        const v = s.values[i] || 0; if (v <= 0) { acc += v; return; }
+        const yTop = y(acc + v), yBot = y(acc) - (acc > 0 ? 2 : 0); // 2px surface gap above previous segment
+        const h = Math.max(yBot - yTop, 0.5);
+        const isTop = cfg.series.slice(si+1).every(ss => !(ss.values[i] > 0));
+        if (isTop) {
+          const r = Math.min(4, thick/2, h);
+          svg.appendChild(svgEl('path', {d: `M ${bx} ${yBot} L ${bx} ${yTop+r} Q ${bx} ${yTop} ${bx+r} ${yTop} L ${bx+thick-r} ${yTop} Q ${bx+thick} ${yTop} ${bx+thick} ${yTop+r} L ${bx+thick} ${yBot} Z`, fill: s.color()}));
+        } else {
+          svg.appendChild(svgEl('rect', {x: bx, y: yTop, width: thick, height: h, fill: s.color()}));
+        }
+        acc += v;
+      });
+      const hit = svgEl('rect', {x: m.l + band*i, y: m.t, width: band, height: H - m.t - m.b, fill: 'transparent'});
+      hit.addEventListener('pointermove', ev => {
+        const rows = cfg.series.map(s => [s.color(), s.name, fmtEur(s.values[i] || 0)]).reverse();
+        rows.unshift([css('--axis'), 'Totale', fmtEur(totals[i])]);
+        showTip(ev.clientX, ev.clientY, tipContent(cfg.tipTitle ? cfg.tipTitle(i) : lb, rows));
+      });
+      hit.addEventListener('pointerleave', hideTip);
+      svg.appendChild(hit);
+    });
+    el.appendChild(svg);
+  }
+  register(el, render); render();
+}
+
+/* ---------- HORIZONTAL BARS (single or grouped) ---------- */
+function hBarChart(el, cfg){
+  function render(){
+    el.innerHTML = '';
+    const W = el.clientWidth || 500;
+    const labels = cfg.labels, nS = cfg.series.length;
+    const rowH = cfg.rowH || (nS > 1 ? 44 : 30);
+    const m = {t: 6, r: 70, b: 24, l: cfg.labelW || 150};
+    const H = m.t + rowH*labels.length + m.b;
+    const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, width: W, height: H});
+    let vals = [];
+    cfg.series.forEach(s => s.values.forEach(v => { if (v != null) vals.push(v); }));
+    const {lo, hi, ticks} = niceTicks(0, Math.max(...vals), 4);
+    const x = v => m.l + (v - lo)/(hi - lo) * (W - m.l - m.r);
+    ticks.forEach(t => {
+      svg.appendChild(svgEl('line', {x1: x(t), x2: x(t), y1: m.t, y2: H - m.b, stroke: t === 0 ? css('--axis') : css('--grid'), 'stroke-width': 1}));
+      const tx = svgEl('text', {x: x(t), y: H - 8, 'text-anchor': 'middle', 'font-size': 10.5, fill: css('--muted'), style: 'font-variant-numeric: tabular-nums'});
+      tx.textContent = fmtEurS(t); svg.appendChild(tx);
+    });
+    const gap = 2, thick = Math.min(nS > 1 ? 14 : 18, (rowH - 10 - gap*(nS-1)) / nS);
+    labels.forEach((lb, i) => {
+      const cy = m.t + rowH*i + rowH/2;
+      const tx = svgEl('text', {x: m.l - 10, y: cy + 3.5, 'text-anchor': 'end', 'font-size': 11.5, fill: css('--ink-2')});
+      tx.textContent = lb.length > 22 ? lb.slice(0, 21) + '…' : lb; svg.appendChild(tx);
+      const groupH = thick*nS + gap*(nS-1);
+      cfg.series.forEach((s, si) => {
+        const v = s.values[i]; if (v == null) return;
+        const by = cy - groupH/2 + si*(thick+gap);
+        const bw = Math.max(x(v) - x(0), 0.5);
+        const r = Math.min(4, thick/2, bw);
+        svg.appendChild(svgEl('path', {d: `M ${x(0)} ${by} L ${x(0)+bw-r} ${by} Q ${x(0)+bw} ${by} ${x(0)+bw} ${by+r} L ${x(0)+bw} ${by+thick-r} Q ${x(0)+bw} ${by+thick} ${x(0)+bw-r} ${by+thick} L ${x(0)} ${by+thick} Z`, fill: s.color()}));
+      });
+      // value at tip (first series)
+      const v0 = cfg.series[0].values[i];
+      const lblTxt = cfg.valueLabel ? cfg.valueLabel(i) : fmtEurS(v0);
+      const tx2 = svgEl('text', {x: x(Math.max(...cfg.series.map(s => s.values[i] || 0))) + 8, y: cy + 3.5, 'font-size': 11, 'font-weight': 600, fill: css('--ink-2'), style: 'font-variant-numeric: tabular-nums'});
+      tx2.textContent = lblTxt; svg.appendChild(tx2);
+      const hit = svgEl('rect', {x: 0, y: m.t + rowH*i, width: W, height: rowH, fill: 'transparent'});
+      hit.addEventListener('pointermove', ev => {
+        const rows = cfg.tipRows ? cfg.tipRows(i) : cfg.series.map(s => [s.color(), s.name, fmtEur(s.values[i] || 0)]);
+        showTip(ev.clientX, ev.clientY, tipContent(lb, rows));
+      });
+      hit.addEventListener('pointerleave', hideTip);
+      svg.appendChild(hit);
+    });
+    el.appendChild(svg);
+  }
+  register(el, render); render();
+}
+
+/* ---------- HEATMAP ---------- */
+const SEQ = ['#cde2fb','#b7d3f6','#9ec5f4','#86b6ef','#6da7ec','#5598e7','#3987e5','#2a78d6','#256abf','#1c5cab','#184f95','#104281','#0d366b'];
+function heatmap(el, cfg){
+  function render(){
+    el.innerHTML = '';
+    const W = el.clientWidth || 500;
+    const rows = cfg.rows, cols = cfg.cols;
+    const m = {t: 26, r: 10, b: 10, l: cfg.labelW || 46};
+    const cellW = (W - m.l - m.r) / cols.length;
+    const cellH = cfg.cellH || 34;
+    const H = m.t + cellH*rows.length + m.b;
+    const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, width: W, height: H});
+    const dark = isDark();
+    let vmax = 0; cfg.values.forEach(r => r.forEach(v => { if (v != null && v > vmax) vmax = v; }));
+    const ramp = dark ? SEQ.slice().reverse() : SEQ;
+    const colorFor = v => {
+      if (v == null || vmax === 0) return 'transparent';
+      const t = Math.sqrt(v / vmax);
+      return ramp[Math.min(ramp.length - 1, Math.floor(t * (ramp.length - 1) + 0.5))];
+    };
+    cols.forEach((c, j) => {
+      const tx = svgEl('text', {x: m.l + cellW*j + cellW/2, y: 16, 'text-anchor': 'middle', 'font-size': 10, fill: css('--muted')});
+      tx.textContent = c; svg.appendChild(tx);
+    });
+    rows.forEach((rl, i) => {
+      const tx = svgEl('text', {x: m.l - 8, y: m.t + cellH*i + cellH/2 + 3.5, 'text-anchor': 'end', 'font-size': 11, fill: css('--ink-2')});
+      tx.textContent = rl; svg.appendChild(tx);
+      cols.forEach((cl, j) => {
+        const v = cfg.values[i][j];
+        const rc = svgEl('rect', {x: m.l + cellW*j + 1, y: m.t + cellH*i + 1, width: cellW - 2, height: cellH - 2, rx: 3, fill: colorFor(v)});
+        rc.addEventListener('pointermove', ev => {
+          showTip(ev.clientX, ev.clientY, tipContent(`${rl} · ${cfg.colFull ? cfg.colFull[j] : cl}`, [[colorFor(v), cfg.metric || 'Valore', v == null ? '—' : fmtEur(v)]]));
+          rc.setAttribute('stroke', css('--ink-1')); rc.setAttribute('stroke-width', 1);
+        });
+        rc.addEventListener('pointerleave', () => { hideTip(); rc.removeAttribute('stroke'); });
+        svg.appendChild(rc);
+      });
+    });
+    el.appendChild(svg);
+  }
+  register(el, render); render();
+}
+function isDark(){
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t === 'dark') return true;
+  if (t === 'light') return false;
+  return matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+/* ================= DATA PREP ================= */
+const ytdBy = {}; DATA.ytd.forEach(r => ytdBy[r.label] = r);
+const RIC = ytdBy['RICAVI TOTALI'], EBI = ytdBy['EBITDA'], MAC = ytdBy['MACO'], PER = ytdBy['PERSONALE'], CPR = ytdBy['COSTI PRODUZIONE'], CGE = ytdBy['COSTI GENERALI'];
+const M26 = DATA.mensile['2026'], M25 = DATA.mensile['2025'], M24 = DATA.mensile['2024'];
+const cut26 = a => a.slice(0, N26);
+const sum = a => a.reduce((x, y) => x + y, 0);
+
+const C_2026 = () => css('--s1'), C_2025 = () => css('--gray-a'), C_2024 = () => css('--gray-b');
+const C_BU = () => css('--accent-soft');
+
+/* ================= TABS ================= */
+const TABS = [
+  ['overview', 'Panoramica'],
+  ['ricavi', 'Ricavi & Mix'],
+  ['pl', 'Conto economico'],
+  ['settimane', 'Settimane'],
+  ['prodotti', 'Prodotti'],
+  ['fasce', 'Fasce orarie'],
+];
+const tabsNav = $('#tabs');
+TABS.forEach(([id, name], i) => {
+  const b = document.createElement('button');
+  b.textContent = name; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('.tabpane').forEach(p => p.classList.remove('active'));
+    $('#pane-' + id).classList.add('active');
+    requestAnimationFrame(renderAll);
+  });
+  tabsNav.appendChild(b);
+});
+$('#pane-overview').classList.add('active');
+
+/* ================= TAB 1: PANORAMICA ================= */
+(function(){
+  const pane = $('#pane-overview');
+  const heroRow = document.createElement('div'); heroRow.className = 'grid hero-row';
+  // hero tile
+  const hero = document.createElement('div'); hero.className = 'card hero';
+  hero.innerHTML = `
+    <div class="lbl">Ricavi totali · gennaio–giugno 2026</div>
+    <div class="val">${fmtEur(RIC.a26)}</div>
+    <div class="delta"><span class="up">${fmtDelta(RIC.v2625)}</span> vs 2025 · <span class="${RIC.vbu_p < 0 ? 'dn' : 'up'}">${fmtDelta(RIC.vbu_p)}</span> vs budget</div>`;
+  heroRow.appendChild(hero);
+  // KPI grid
+  const kg = document.createElement('div'); kg.className = 'grid kpis'; kg.style.marginBottom = '0';
+  const kpis = [
+    ['EBITDA YTD', fmtEur(EBI.a26), `<span class="up">${fmtDelta(EBI.v2625)}</span> vs 2025 · ${fmtPct(EBI.p26)} sui ricavi`],
+    ['MACO (margine di contribuzione)', fmtEur(MAC.a26), `${fmtPct(MAC.p26)} sui ricavi · <span class="up">+7 p.p.</span> vs 2025`],
+    ['Costi produzione', fmtEur(CPR.a26), `${fmtPct(CPR.p26)} sui ricavi · era ${fmtPct(CPR.a25/RIC.a25)} nel 2025`],
+    ['Personale', fmtEur(PER.a26), `${fmtPct(PER.p26)} sui ricavi · <span class="up">${fmtDelta(PER.v2625)}</span> vs 2025`],
+  ];
+  kpis.forEach(([l, v, d]) => {
+    const t = document.createElement('div'); t.className = 'tile';
+    t.innerHTML = `<div class="lbl">${l}</div><div class="val">${v}</div><div class="delta">${d}</div>`;
+    kg.appendChild(t);
+  });
+  heroRow.appendChild(kg);
+  pane.appendChild(heroRow);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  const row2 = document.createElement('div'); row2.className = 'grid two';
+  // YTD comparison bars
+  const ytdLabels = ['2024', '2025', '2026', 'Budget 2026'];
+  const cmp = makeCard(row2, {
+    title: 'Ricavi YTD a confronto', sub: 'Gennaio–giugno, actual per anno e budget 2026',
+    table: {headers: ['Anno', 'Ricavi YTD'], rows: ytdLabels.map((l, i) => ({cells: [l, fmtEur([RIC.a24, RIC.a25, RIC.a26, RIC.bu26][i])]}))}
+  });
+  barChart(cmp.box, {
+    labels: ytdLabels, height: 250,
+    series: [{name: 'Ricavi YTD', values: [RIC.a24, RIC.a25, RIC.a26, RIC.bu26],
+      color: C_2026, colors: [C_2024, C_2025, C_2026, C_BU]}],
+    directLabels: [[0, 0, fmtEurS(RIC.a24)], [1, 0, fmtEurS(RIC.a25)], [2, 0, fmtEurS(RIC.a26)], [3, 0, fmtEurS(RIC.bu26)]],
+  });
+  // EBITDA mensile 3 anni
+  const ebiCard = makeCard(row2, {
+    title: 'EBITDA mensile — tre anni a confronto', sub: 'Il recupero mese per mese, 2024 → 2026',
+    table: {headers: ['Mese', '2024', '2025', '2026'], rows: MESI.map((mo, i) => ({cells: [mo, fmtEur(M24.ebitda[i]), fmtEur(M25.ebitda[i]), i < N26 ? fmtEur(M26.ebitda[i]) : '—']}))}
+  });
+  setLegend(ebiCard.legend, [['var(--s1)', '2026', 'line'], ['var(--gray-a)', '2025', 'line'], ['var(--gray-b)', '2024', 'line']]);
+  lineChart(ebiCard.box, {
+    labels: MESI, height: 250,
+    series: [
+      {name: '2024', values: M24.ebitda, color: C_2024},
+      {name: '2025', values: M25.ebitda, color: C_2025},
+      {name: '2026', values: cut26(M26.ebitda).concat(Array(6).fill(null)), color: C_2026},
+    ],
+  });
+  pane.appendChild(row2);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // YTD full table
+  const tcard = makeCard(pane, {title: 'Conto economico YTD — dettaglio', sub: 'Gennaio–giugno · actual 2024, 2025, 2026 e budget 2026'});
+  const fmtRow = r => ({
+    strong: ['RICAVI TOTALI','MACO','EBITDA','COSTI PRODUZIONE','COSTI GENERALI','PERSONALE'].includes(r.label),
+    cells: [r.label.charAt(0) + r.label.slice(1).toLowerCase() === r.label ? r.label : (r.label === r.label.toUpperCase() ? r.label.charAt(0) + r.label.slice(1).toLowerCase() : r.label),
+      fmtEur(r.a24), fmtEur(r.a25), fmtEur(r.a26), fmtDelta(r.v2625), fmtEur(r.bu26), fmtDelta(r.vbu_p)]
+  });
+  buildTable(tcard.box, ['Voce', '2024', '2025', '2026', 'Δ 26/25', 'Budget 26', 'Δ vs BU'], DATA.ytd.map(fmtRow));
+})();
+
+/* ================= TAB 2: RICAVI & MIX ================= */
+(function(){
+  const pane = $('#pane-ricavi');
+  // metric chips
+  const chips = document.createElement('div'); chips.className = 'chips';
+  const METRICS = [['ricavi','Ricavi totali'],['food','Food'],['beverage','Beverage'],['maco','MACO']];
+  let metric = 'ricavi';
+  pane.appendChild(chips);
+
+  const row1 = document.createElement('div'); row1.className = 'grid two';
+  const lineCard = makeCard(row1, {
+    title: 'Andamento mensile — tre anni', sub: 'Actual per mese; il 2026 arriva a giugno',
+    table: {headers: ['Mese','2024','2025','2026'], rows: MESI.map((mo,i)=>({cells:[mo, fmtEur(M24.ricavi[i]), fmtEur(M25.ricavi[i]), i<N26?fmtEur(M26.ricavi[i]):'—']}))}
+  });
+  setLegend(lineCard.legend, [['var(--s1)', '2026', 'line'], ['var(--gray-a)', '2025', 'line'], ['var(--gray-b)', '2024', 'line']]);
+  let lineBox = lineCard.box;
+  function drawLine(){
+    lineBox.innerHTML = '';
+    lineChart(lineBox, {
+      labels: MESI, height: 270,
+      series: [
+        {name: '2024', values: M24[metric], color: C_2024},
+        {name: '2025', values: M25[metric], color: C_2025},
+        {name: '2026', values: cut26(M26[metric]).concat(Array(6).fill(null)), color: C_2026},
+      ],
+    });
+  }
+  METRICS.forEach(([k, name], i) => {
+    const b = document.createElement('button'); b.textContent = name;
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      metric = k;
+      chips.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      drawLine();
+    });
+    chips.appendChild(b);
+  });
+
+  // quarterly
+  const q1r = {}, q2r = {};
+  DATA.q1.forEach(r => q1r[r.label] = r); DATA.q2.forEach(r => q2r[r.label] = r);
+  const Q1 = q1r['RICAVI TOTALI'], Q2 = q2r['RICAVI TOTALI'];
+  const qCard = makeCard(row1, {
+    title: 'Ricavi per trimestre', sub: 'Q1 e Q2 · 2024 vs 2025 vs 2026',
+    table: {headers: ['Trimestre','2024','2025','2026'], rows: [
+      {cells: ['Q1', fmtEur(Q1.y24), fmtEur(Q1.y25), fmtEur(Q1.y26)]},
+      {cells: ['Q2', fmtEur(Q2.y24), fmtEur(Q2.y25), fmtEur(Q2.y26)]},
+    ]}
+  });
+  setLegend(qCard.legend, [['var(--s1)', '2026'], ['var(--gray-a)', '2025'], ['var(--gray-b)', '2024']]);
+  barChart(qCard.box, {
+    labels: ['1° trimestre', '2° trimestre'], height: 270, topPad: 24,
+    series: [
+      {name: '2024', values: [Q1.y24, Q2.y24], color: C_2024},
+      {name: '2025', values: [Q1.y25, Q2.y25], color: C_2025},
+      {name: '2026', values: [Q1.y26, Q2.y26], color: C_2026},
+    ],
+    directLabels: [[0, 2, fmtEurS(Q1.y26)], [1, 2, fmtEurS(Q2.y26)]],
+  });
+  pane.appendChild(row1);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // mix per banco vs budget
+  const cats = DATA.pl_cat.map(c => ({label: c.label, ytd: sum(c.m.slice(0, N26)), bu: (DATA.bu_cat[c.label] || {}).ytd || 0}))
+    .sort((a, b) => b.ytd - a.ytd);
+  const mixCard = makeCard(pane, {
+    title: 'Ricavi per banco — YTD vs budget', sub: 'Gennaio–giugno 2026 · actual (blu) contro budget (grigio)',
+    table: {headers: ['Banco', 'Actual YTD', 'Budget YTD', 'Δ %'], rows: cats.map(c => ({cells: [c.label, fmtEur(c.ytd), fmtEur(c.bu), c.bu ? fmtDelta((c.ytd - c.bu)/c.bu) : '—']}))}
+  });
+  setLegend(mixCard.legend, [['var(--s1)', 'Actual YTD'], ['var(--gray-b)', 'Budget YTD']]);
+  hBarChart(mixCard.box, {
+    labels: cats.map(c => c.label), labelW: 170, rowH: 40,
+    series: [
+      {name: 'Actual YTD', values: cats.map(c => c.ytd), color: C_2026},
+      {name: 'Budget YTD', values: cats.map(c => c.bu), color: C_2024},
+    ],
+    valueLabel: i => fmtEurS(cats[i].ytd) + (cats[i].bu ? ` (${fmtDelta((cats[i].ytd - cats[i].bu)/cats[i].bu)})` : ''),
+    tipRows: i => [
+      [css('--s1'), 'Actual YTD', fmtEur(cats[i].ytd)],
+      [css('--gray-b'), 'Budget YTD', fmtEur(cats[i].bu)],
+    ],
+  });
+
+  drawLine();
+})();
+
+/* ================= TAB 3: CONTO ECONOMICO ================= */
+(function(){
+  const pane = $('#pane-pl');
+  const row1 = document.createElement('div'); row1.className = 'grid two';
+
+  // EBITDA mensile 2026 vs 2025 bars
+  const eb = makeCard(row1, {
+    title: 'EBITDA per mese — 2026 vs 2025', sub: 'Valori mensili, gennaio–giugno',
+    table: {headers: ['Mese', '2025', '2026'], rows: MESI.slice(0, N26).map((mo, i) => ({cells: [mo, fmtEur(M25.ebitda[i]), fmtEur(M26.ebitda[i])]}))}
+  });
+  setLegend(eb.legend, [['var(--s1)', '2026'], ['var(--gray-a)', '2025']]);
+  barChart(eb.box, {
+    labels: MESI.slice(0, N26), height: 260,
+    series: [
+      {name: '2025', values: M25.ebitda.slice(0, N26), color: C_2025},
+      {name: '2026', values: M26.ebitda.slice(0, N26), color: C_2026},
+    ],
+  });
+
+  // costi generali breakdown
+  const costs = DATA.pl_cost.map(c => ({label: c.label, ytd: sum(c.m.slice(0, N26))})).sort((a, b) => b.ytd - a.ytd);
+  const cc = makeCard(row1, {
+    title: 'Costi generali — composizione YTD', sub: 'Gennaio–giugno 2026, ordinati per peso',
+    table: {headers: ['Voce', 'YTD 2026', '% sui ricavi'], rows: costs.map(c => ({cells: [c.label, fmtEur(c.ytd), fmtPct(c.ytd/RIC.a26)]}))}
+  });
+  hBarChart(cc.box, {
+    labels: costs.map(c => c.label), labelW: 165, rowH: 30,
+    series: [{name: 'YTD 2026', values: costs.map(c => c.ytd), color: C_2026}],
+    tipRows: i => [[css('--s1'), 'YTD 2026', fmtEur(costs[i].ytd)], [css('--gray-a'), '% sui ricavi', fmtPct(costs[i].ytd/RIC.a26)]],
+  });
+  pane.appendChild(row1);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // full P&L table
+  const plCard = makeCard(pane, {title: 'P&L 2026 per mese', sub: 'Ricavi per banco, costi e margini · valori in euro'});
+  const rows = [];
+  const ricaviRow = {label: 'RICAVI TOTALI', m: MESI.map((_, i) => i < N26 ? M26.ricavi[i] : null)};
+  function pushRow(label, arr, strong){
+    rows.push({strong: !!strong, cells: [label].concat(arr.slice(0, N26).map(v => v == null ? '—' : fmtEur(v))).concat([fmtEur(sum(arr.slice(0, N26).map(v => v || 0)))])});
+  }
+  pushRow('RICAVI TOTALI', M26.ricavi, true);
+  DATA.pl_cat.forEach(c => pushRow('  ' + c.label, c.m));
+  pushRow('COSTI PRODUZIONE', M26.costiprod, true);
+  pushRow('MACO', M26.maco, true);
+  pushRow('COSTI GENERALI (incl. personale)', MESI.map((_, i) => i < N26 ? (M26.maco[i] - M26.ebitda[i]) : 0), true);
+  DATA.pl_cost.forEach(c => pushRow('  ' + c.label, c.m));
+  pushRow('EBITDA', M26.ebitda, true);
+  buildTable(plCard.box, ['Voce'].concat(MESI.slice(0, N26)).concat(['Tot. YTD']), rows);
+})();
+
+/* ================= TAB 4: SETTIMANE ================= */
+(function(){
+  const pane = $('#pane-settimane');
+  const W = DATA.weekly;
+  const rp = DATA.riepilogo;
+
+  const kg = document.createElement('div'); kg.className = 'grid kpis';
+  [
+    ['Fatturato lordo 2026 (iPratico)', fmtEur(rp.fatt_tot), `${rp.n_sett} settimane · media ${fmtEur(rp.fatt_medio)}/sett.`],
+    ['Miglior settimana', fmtEur(rp.best_wk[0]), rp.best_wk[1]],
+    ['Settimana più debole', fmtEur(rp.worst_wk[0]), rp.worst_wk[1] + ' (parziale)'],
+    ['Margine lordo sul venduto', fmtPct(rp.margine_pct), 'ricavi meno costo produzione teorico'],
+  ].forEach(([l, v, d]) => {
+    const t = document.createElement('div'); t.className = 'tile';
+    t.innerHTML = `<div class="lbl">${l}</div><div class="val">${v}</div><div class="delta">${d}</div>`;
+    kg.appendChild(t);
+  });
+  pane.appendChild(kg);
+
+  const wLabels = W.map(w => 'S' + w.w);
+  const fw = makeCard(pane, {
+    title: 'Fatturato settimanale 2026', sub: 'Lordo iPratico per settimana ISO · media di periodo € 46.065',
+    table: {headers: ['Settimana', 'Fatturato', 'Margine lordo', 'Margine %'], rows: W.map(w => ({cells: ['Settimana ' + w.w, fmtEur(w.fatt), fmtEur(w.margine), fmtPct(w.mpct)]}))}
+  });
+  // custom: bar chart + avg line drawn after
+  barChart(fw.box, {
+    labels: wLabels, height: 280,
+    series: [{name: 'Fatturato', values: W.map(w => w.fatt), color: C_2026}],
+    tipTitle: i => 'Settimana ' + W[i].w,
+    directLabels: [[13, 0, fmtEurS(rp.best_wk[0])]],
+  });
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // stacked by category
+  const TOPC = ['Banco Gastronomia', 'Banco Bar', 'Banco Pizza', 'Banco Salumeria', 'Ristorazione'];
+  const COLC = [C_2026, () => css('--s2'), () => css('--s3'), () => css('--s4'), () => css('--s5')];
+  const others = W.map(w => {
+    const t = w.fatt - TOPC.reduce((a, c) => a + (w[c] || 0), 0);
+    return Math.max(t, 0);
+  });
+  const sc = makeCard(pane, {
+    title: 'Composizione del fatturato per settimana', sub: 'I cinque banchi principali; il resto raggruppato in “Altre”',
+    table: {headers: ['Settimana'].concat(TOPC).concat(['Altre', 'Totale']), rows: W.map((w, i) => ({cells: ['Settimana ' + w.w].concat(TOPC.map(c => fmtEur(w[c] || 0))).concat([fmtEur(others[i]), fmtEur(w.fatt)])}))}
+  });
+  const LEGVARS = ['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
+  setLegend(sc.legend, TOPC.map((c, i) => [LEGVARS[i], c.replace('Banco ', '')]).concat([['var(--gray-b)', 'Altre']]));
+  stackedBar(sc.box, {
+    labels: wLabels, height: 300,
+    series: TOPC.map((c, i) => ({name: c, values: W.map(w => w[c] || 0), color: COLC[i]}))
+      .concat([{name: 'Altre', values: others, color: C_2024}]),
+    tipTitle: i => 'Settimana ' + W[i].w,
+  });
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // margin line
+  const mg = makeCard(pane, {
+    title: 'Margine lordo % per settimana', sub: 'Fatturato meno costo teorico di produzione, in % del fatturato',
+    table: {headers: ['Settimana', 'Margine %'], rows: W.map(w => ({cells: ['Settimana ' + w.w, fmtPct(w.mpct)]}))}
+  });
+  (function(){
+    function render(){
+      mg.box.innerHTML = '';
+      const el = mg.box;
+      const Wd = el.clientWidth || 500, H = 200;
+      const m = {t: 14, r: 16, b: 26, l: 44};
+      const svg = svgEl('svg', {viewBox: `0 0 ${Wd} ${H}`, width: Wd, height: H});
+      const vals = W.map(w => w.mpct);
+      const lo = 0.7, hi = 0.9;
+      const x = i => m.l + i/(W.length - 1) * (Wd - m.l - m.r);
+      const y = v => m.t + (1 - (v - lo)/(hi - lo)) * (H - m.t - m.b);
+      [0.7, 0.75, 0.8, 0.85, 0.9].forEach(t => {
+        svg.appendChild(svgEl('line', {x1: m.l, x2: Wd - m.r, y1: y(t), y2: y(t), stroke: css('--grid'), 'stroke-width': 1}));
+        const tx = svgEl('text', {x: m.l - 8, y: y(t) + 3.5, 'text-anchor': 'end', 'font-size': 10.5, fill: css('--muted')});
+        tx.textContent = Math.round(t*100) + '%'; svg.appendChild(tx);
+      });
+      W.forEach((w, i) => {
+        if (i % 2 === 0) {
+          const tx = svgEl('text', {x: x(i), y: H - 8, 'text-anchor': 'middle', 'font-size': 10, fill: css('--muted')});
+          tx.textContent = 'S' + w.w; svg.appendChild(tx);
+        }
+      });
+      let d = '';
+      vals.forEach((v, i) => { d += (i ? ' L ' : 'M ') + x(i).toFixed(1) + ' ' + y(Math.min(Math.max(v, lo), hi)).toFixed(1); });
+      svg.appendChild(svgEl('path', {d, fill: 'none', stroke: css('--s1'), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}));
+      const cross = svgEl('line', {y1: m.t, y2: H - m.b, stroke: css('--axis'), 'stroke-width': 1, visibility: 'hidden'});
+      svg.appendChild(cross);
+      const ov = svgEl('rect', {x: m.l, y: m.t, width: Wd - m.l - m.r, height: H - m.t - m.b, fill: 'transparent'});
+      ov.addEventListener('pointermove', ev => {
+        const pt = svg.getBoundingClientRect(); const px = ev.clientX - pt.left;
+        let best = 0, bd = 1e9;
+        W.forEach((_, i) => { const dd = Math.abs(x(i) - px); if (dd < bd) { bd = dd; best = i; } });
+        cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best)); cross.setAttribute('visibility', 'visible');
+        showTip(ev.clientX, ev.clientY, tipContent('Settimana ' + W[best].w, [[css('--s1'), 'Margine lordo', fmtPct(W[best].mpct)], [css('--gray-a'), 'Fatturato', fmtEur(W[best].fatt)]]));
+      });
+      ov.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
+      svg.appendChild(ov);
+      el.appendChild(svg);
+    }
+    register(mg.box, render); render();
+  })();
+})();
+
+/* ================= TAB 5: PRODOTTI ================= */
+(function(){
+  const pane = $('#pane-prodotti');
+  const reparti = Object.keys(DATA.tops);
+  const chips = document.createElement('div'); chips.className = 'chips';
+  pane.appendChild(chips);
+  const holder = document.createElement('div');
+  pane.appendChild(holder);
+  let current = reparti[0];
+
+  function draw(){
+    holder.innerHTML = '';
+    const rep = DATA.tops[current];
+    const items = rep.items;
+    const card = makeCard(holder, {
+      title: 'Top prodotti — ' + current, sub: `Fatturato 2026 (iPratico) · totale reparto ${fmtEur(rep.tot)}`,
+      table: {headers: ['Prodotto', 'Quantità', 'Fatturato', '% reparto', 'Margine %'], rows: items.map(p => ({cells: [p.p, eur0.format(Math.round(p.q)), fmtEur(p.f), fmtPct(p.pct), p.c > 0 ? fmtPct(p.m) : 'n.d.']}))}
+    });
+    hBarChart(card.box, {
+      labels: items.map(p => p.p), labelW: 190, rowH: 30,
+      series: [{name: 'Fatturato', values: items.map(p => p.f), color: C_2026}],
+      valueLabel: i => fmtEurS(items[i].f),
+      tipRows: i => {
+        const p = items[i];
+        const rows = [[css('--s1'), 'Fatturato', fmtEur(p.f)], [css('--gray-a'), 'Quantità', eur0.format(Math.round(p.q))], [css('--gray-a'), '% sul reparto', fmtPct(p.pct)]];
+        if (p.c > 0) rows.push([css('--gray-a'), 'Margine', fmtPct(p.m)]);
+        return rows;
+      },
+    });
+    const note = document.createElement('p'); note.className = 'sub';
+    note.style.marginTop = '10px'; note.style.fontSize = '11.5px'; note.style.color = 'var(--muted)';
+    note.textContent = 'Il margine è calcolato solo dove il costo prodotto è mappato; “n.d.” = costo non ancora inserito a sistema.';
+    holder.appendChild(note);
+    requestAnimationFrame(renderAll);
+  }
+  reparti.forEach((r, i) => {
+    const b = document.createElement('button'); b.textContent = r.replace('Banco ', '');
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      current = r;
+      chips.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      draw();
+    });
+    chips.appendChild(b);
+  });
+  draw();
+})();
+
+/* ================= TAB 6: FASCE ORARIE ================= */
+(function(){
+  const pane = $('#pane-fasce');
+  const F = DATA.fasce;
+  const CODES = ['01','02','03','04','05','06','07','08','09','10'];
+  const SHORT = ['Apertura','Mattina','Tarda matt.','Pranzo','Primo pom.','Pomeriggio','Tardo pom.','Aperitivo','Cena','Cena tardi'];
+  const FULL = ['Apertura (7:30–9:30)','Mattina (9:31–11:30)','Mattina tarda (11:31–12:30)','Pranzo (12:31–14:30)','Primo pomeriggio (14:31–15:30)','Pomeriggio (15:31–17:30)','Pomeriggio tardo (17:31–19:30)','Aperitivo (19:31–21:00)','Cena (21:01–23:59)','Cena tardi (0:00–4:00)'];
+  const DOW = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+  const DOWs = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+
+  // heatmap dow x fascia (media giornaliera)
+  const hmVals = DOW.map((_, d) => CODES.map(c => {
+    const tot = (F.by_dow[String(d)] || {})[c] || 0;
+    const n = F.dow_count[String(d)] || 1;
+    return Math.round(tot / n);
+  }));
+  const hm = makeCard(pane, {
+    title: 'Incasso medio per giorno e fascia oraria', sub: 'Media giornaliera gennaio–giugno 2026 · più scuro = più incasso',
+    table: {headers: ['Giorno'].concat(SHORT), rows: DOW.map((d, i) => ({cells: [d].concat(hmVals[i].map(v => fmtEur(v)))}))}
+  });
+  heatmap(hm.box, {
+    rows: DOWs, cols: SHORT, colFull: FULL, values: hmVals, labelW: 46, cellH: 36, metric: 'Incasso medio/giorno',
+  });
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  const row = document.createElement('div'); row.className = 'grid two';
+  // per fascia totale
+  const perF = CODES.map((c, i) => {
+    let tot = 0;
+    for (const mth in F.by_month) tot += F.by_month[mth][c] || 0;
+    return {label: FULL[i], v: tot};
+  });
+  const totAll = perF.reduce((a, b) => a + b.v, 0);
+  const fb = makeCard(row, {
+    title: 'Fatturato per fascia oraria — totale YTD', sub: 'Gennaio–giugno 2026',
+    table: {headers: ['Fascia', 'Fatturato', '% sul totale'], rows: perF.map(f => ({cells: [f.label, fmtEur(f.v), fmtPct(f.v/totAll)]}))}
+  });
+  hBarChart(fb.box, {
+    labels: perF.map(f => f.label), labelW: 185, rowH: 30,
+    series: [{name: 'Fatturato YTD', values: perF.map(f => f.v), color: C_2026}],
+    tipRows: i => [[css('--s1'), 'Fatturato YTD', fmtEur(perF[i].v)], [css('--gray-a'), '% sul totale', fmtPct(perF[i].v/totAll)]],
+  });
+
+  // media giornaliera per giorno settimana
+  const perD = DOW.map((d, i) => {
+    let tot = 0;
+    for (const c of CODES) tot += (F.by_dow[String(i)] || {})[c] || 0;
+    return Math.round(tot / (F.dow_count[String(i)] || 1));
+  });
+  const db = makeCard(row, {
+    title: 'Incasso medio per giorno della settimana', sub: 'Media giornaliera gennaio–giugno 2026',
+    table: {headers: ['Giorno', 'Incasso medio'], rows: DOW.map((d, i) => ({cells: [d, fmtEur(perD[i])]}))}
+  });
+  const maxI = perD.indexOf(Math.max(...perD));
+  barChart(db.box, {
+    labels: DOWs, height: 260, topPad: 24,
+    series: [{name: 'Incasso medio', values: perD, color: C_2026}],
+    tipTitle: i => DOW[i],
+    directLabels: [[maxI, 0, fmtEurS(perD[maxI])]],
+  });
+  pane.appendChild(row);
+})();
+
+/* ================= THEME + RESIZE ================= */
+const themeBtn = $('#themeBtn');
+const THEMES = ['auto', 'light', 'dark'];
+let themeIdx = 0;
+themeBtn.addEventListener('click', () => {
+  themeIdx = (themeIdx + 1) % 3;
+  const t = THEMES[themeIdx];
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  themeBtn.textContent = 'Tema: ' + (t === 'auto' ? 'auto' : t === 'light' ? 'chiaro' : 'scuro');
+  requestAnimationFrame(renderAll);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => renderAll());
+let rzT;
+addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => renderAll(), 150); });
+</script>
+</body>
+</html>
