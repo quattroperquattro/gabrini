@@ -173,6 +173,19 @@ nav.tabs button[aria-selected="true"] { color: #fff; border-bottom-color: #d7a95
 }
 .warn .wi { flex: none; font-size: 14px; }
 .warn b { color: #ecc98a; }
+/* --- recensioni --- */
+.rev-li { border-left: 3px solid var(--good); padding-left: 12px; margin-bottom: 12px; }
+.rev-li.neg { border-left-color: var(--bad); }
+.rev-li.warn2 { border-left-color: #d7a95a; }
+.rev-li .rt { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.rev-li .rd { font-size: 11.5px; color: var(--ink-2); line-height: 1.55; }
+.quote { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; }
+.quote .qh { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+.quote .stars { color: #d7a95a; font-size: 12px; letter-spacing: 1px; }
+.quote .qm { font-size: 11px; color: var(--muted); }
+.quote .qt { font-size: 12.5px; line-height: 1.55; font-style: italic; }
+.quote .qs { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+.sentdots { color: #d7a95a; letter-spacing: 1px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -193,6 +206,7 @@ nav.tabs button[aria-selected="true"] { color: #fff; border-bottom-color: #d7a95
   <section class="tabpane" id="pane-prodotti" role="tabpanel"></section>
   <section class="tabpane" id="pane-quantita" role="tabpanel"></section>
   <section class="tabpane" id="pane-fasce" role="tabpanel"></section>
+  <section class="tabpane" id="pane-reviews" role="tabpanel"></section>
 
   <p class="note">Fonte: Gabrini_Andamento1.xlsx · dati aggiornati a giugno 2026. Il costo del personale è incluso nei costi generali; l'EBITDA è calcolato dopo il personale.</p>
 </div>
@@ -605,6 +619,7 @@ const TABS = [
   ['prodotti', 'Prodotti'],
   ['quantita', 'Quantità'],
   ['fasce', 'Fasce orarie'],
+  ['reviews', 'Recensioni'],
 ];
 const tabsNav = $('#tabs');
 TABS.forEach(([id, name], i) => {
@@ -1145,6 +1160,139 @@ $('#pane-overview').classList.add('active');
     directLabels: [[maxI, 0, fmtEurS(perD[maxI])]],
   });
   pane.appendChild(row);
+})();
+
+/* ================= TAB 8: RECENSIONI ================= */
+(function(){
+  const pane = $('#pane-reviews');
+
+  // KPI tiles
+  const kp = document.createElement('div'); kp.className = 'grid kpis';
+  [['Google Maps', '4,2 / 5', '~490 recensioni'],
+   ['TripAdvisor', '3,7 / 5', '61 recensioni · #54 su 152 gastronomie a Roma'],
+   ['Criticità principale', 'Eredità Franchi', 'aspettative altissime · rapporto qualità/prezzo'],
+   ['Punto di forza', 'Banco & prodotto', 'salumi, formaggi, vini · piatti dello chef la sera']].forEach(([l, v, d]) => {
+    const t = document.createElement('div'); t.className = 'tile';
+    const e1 = document.createElement('div'); e1.className = 'lbl'; e1.textContent = l;
+    const e2 = document.createElement('div'); e2.className = 'val'; e2.style.fontSize = '20px'; e2.textContent = v;
+    const e3 = document.createElement('div'); e3.className = 'delta'; e3.textContent = d;
+    t.appendChild(e1); t.appendChild(e2); t.appendChild(e3);
+    kp.appendChild(t);
+  });
+  pane.appendChild(kp);
+
+  // forza / debolezza
+  const FORTE = [
+    ['Banco salumi, formaggi e gastronomia', 'La qualità della materia prima è il punto più riconosciuto: salumi e formaggi selezionati, prodotti "ben presentati e a prezzi ragionevoli" al banco. Il carpaccio, il cotechino e i piatti espressi raccolgono lodi costanti.'],
+    ['Cucina della sera · chef Marco Moroni', 'La trasformazione serale in osteria funziona nelle recensioni migliori: "la cucina dello chef ci ha stupito", carbonara e spaghetti citati come eccellenti. È il segmento con il sentiment più alto.'],
+    ['Vini naturali e mescita', 'Selezione enoteca e consigli del personale competente generano recensioni a 5 stelle. Birra artigianale e aperitivo "di qualità, in particolare l\'impasto della pizza molto leggero".'],
+    ['Ambiente ex-Franchi', 'Spazioso, elegante, "un\'oasi felice di alta gastronomia". Il locale storico attira curiosità e traffico: molte recensioni positive partono dal fascino del posto.'],
+    ['Servizio quando funziona', '"Servizio stellare", "staff molto professionale": quando il personale ha tempo di raccontare i prodotti, l\'esperienza genera ritorni e passaparola.']
+  ];
+  const DEBOLE = [
+    ['Confronto con Franchi', 'La criticità più strutturale: "le leggendarie rosticcerie di un tempo sono scomparse", "non dite che Franchi è risorto". Chi arriva con la memoria di Franchi giudica col metro del passato — il posizionamento va raccontato meglio.', 'neg'],
+    ['Supplì sotto le aspettative', 'Il prodotto-simbolo è anche il più attaccato: "supplì senza mozzarella", "insipidi", "i supplì di un tempo sono un lontano ricordo". Con 20.322 battute YTD è il 2° prodotto più venduto: ogni difetto qui ha impatto enorme.', 'neg'],
+    ['Incostanza dei piatti caldi', 'Trippa e mozzarella in carrozza arrivate fredde, baccalà "scuro e molto salato", pizza "immangiabile" e girarrosto "più fumo che arrosto" nelle recensioni peggiori del 2025. Il pattern è l\'incostanza, non la qualità media.', 'neg'],
+    ['Percezione prezzi', 'Rapporto qualità/prezzo contestato nelle recensioni critiche (supplì a €2,50, conti percepiti alti rispetto al predecessore). Su Google compare l\'etichetta "turistico".', 'warn2'],
+    ['Cassa e accoglienza incostanti', 'Episodi ripetuti: "la signora alla cassa mette a disagio" (ago 2025), cliente trattato "con assoluto disprezzo" (feb 2026), banco "scortese e poco disponibile". Pochi episodi, ma sono quelli che finiscono online.', 'warn2']
+  ];
+  const row = document.createElement('div'); row.className = 'grid two';
+  function listCard(title, items, cls){
+    const c = document.createElement('div'); c.className = 'card';
+    const h = document.createElement('h3'); h.textContent = title; h.style.marginBottom = '14px'; c.appendChild(h);
+    items.forEach(it => {
+      const d = document.createElement('div'); d.className = 'rev-li ' + (it[2] || cls || '');
+      const t1 = document.createElement('div'); t1.className = 'rt'; t1.textContent = it[0];
+      const t2 = document.createElement('div'); t2.className = 'rd'; t2.textContent = it[1];
+      d.appendChild(t1); d.appendChild(t2); c.appendChild(d);
+    });
+    row.appendChild(c);
+  }
+  listCard('✦ Punti di forza nelle recensioni', FORTE, '');
+  listCard('⚠ Punti di debolezza nelle recensioni', DEBOLE, 'neg');
+  pane.appendChild(row);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // tabella prodotti vs recensioni
+  const SENT = n => '●'.repeat(n) + '○'.repeat(5 - n);
+  const PRODS = [
+    ['Salumi & formaggi (banco)', 5, '"Prodotti ben presentati, prezzi ragionevoli" · qualità mai contestata', 'basso'],
+    ['Ristorante sera / piatti espressi', 5, '"La cucina dello chef ci ha stupito" · carbonara e spaghetti lodati', 'basso'],
+    ['Vino & mescita', 5, 'Selezione e consigli citati nelle recensioni a 5 stelle', 'basso'],
+    ['Pizza al taglio', 3, '"Impasto molto leggero" ma anche "immangiabile" (nov 2025) · percezione altalenante', 'medio'],
+    ['Gastronomia calda', 3, 'Trippa e mozzarella in carrozza fredde · incostanza legata ai picchi', 'medio'],
+    ['Girarrosto', 2, '"Più fumo che arrosto" (set 2025) · "così così" (nov 2025)', 'alto'],
+    ['Supplì', 2, '"Senza mozzarella" · "insipidi" · "un lontano ricordo" — vs 20.322 battute YTD', 'alto'],
+  ];
+  const tc = makeCard(pane, {title: 'Prodotti chiave — percezione nelle recensioni', sub: 'Sentiment sintetico da recensioni TripAdvisor e Google (via aggregatori) · incrociato con i volumi di vendita YTD'});
+  (function(){
+    const t = document.createElement('table'); t.className = 'dv';
+    const thr = document.createElement('tr');
+    ['Prodotto / area', 'Sentiment', 'Citazioni tipiche', 'Rischio reputazionale'].forEach(h => { const th = document.createElement('th'); th.textContent = h; thr.appendChild(th); });
+    t.appendChild(thr);
+    PRODS.forEach(p => {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td'); c1.textContent = p[0]; c1.style.textAlign = 'left'; c1.style.fontWeight = '600';
+      const c2 = document.createElement('td'); c2.className = 'sentdots'; c2.textContent = SENT(p[1]); c2.style.textAlign = 'left';
+      const c3 = document.createElement('td'); c3.textContent = p[2]; c3.style.textAlign = 'left'; c3.style.whiteSpace = 'normal';
+      const c4 = document.createElement('td'); c4.textContent = p[3]; c4.style.textAlign = 'left';
+      c4.style.fontWeight = '600'; c4.style.color = p[3] === 'alto' ? 'var(--bad)' : p[3] === 'medio' ? '#b07f2e' : 'var(--good)';
+      tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tr.appendChild(c4);
+      t.appendChild(tr);
+    });
+    const w = document.createElement('div'); w.className = 'tblwrap'; w.appendChild(t); tc.box.appendChild(w);
+  })();
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // recensioni negative con citazioni
+  const st = document.createElement('div'); st.className = 'sectionTitle'; st.textContent = 'Recensioni critiche — citazioni integrali';
+  pane.appendChild(st);
+  const QUOTES = [
+    [1, 'lug 2026', 'Google', '"Scarsa qualità, scarso servizio, scarsa scelta."', 'La recensione negativa più recente su Google.'],
+    [2, 'feb 2026', 'TripAdvisor', '"Mi ha trattato con assoluto disprezzo."', 'Episodio di scortesia alla cassa/banco — il tema servizio riemerge.'],
+    [2, 'nov 2025', 'TripAdvisor', '"Pizza immangiabile, girarrosto così così, i supplì di un tempo sono un lontano ricordo."', 'Tre prodotti core colpiti in una sola recensione.'],
+    [2, 'set 2025', 'TripAdvisor', '"Più fumo che arrosto."', 'Sul girarrosto — percezione di sostanza inferiore alla promessa.'],
+    [3, 'ago 2025', 'TripAdvisor', '"Supplì eccellenti… ma la signora alla cassa mette a disagio."', 'Prodotto promosso, accoglienza bocciata: il collo di bottiglia è l\'esperienza.'],
+    [2, 'feb 2024', 'TripAdvisor', '"Una delusione! Supplì alla mozzarella… senza mozzarella."', 'Il titolo parla da solo: difetto sul prodotto-bandiera.'],
+    [2, 'feb 2024', 'TripAdvisor', '"Baccalà di scarsa qualità, piuttosto scuro e molto salato. Il rapporto qualità/prezzo non è buono."', 'Qualità del fritto + percezione prezzo nella stessa recensione.'],
+    [1, 'gen 2024', 'TripAdvisor', '"Incredibilmente deludente: supplì insipidi a €2,50, vitello tonnato con salsa scarsa e anonima."', 'Prezzo citato esplicitamente come aggravante.'],
+    [2, 'gen 2024', 'TripAdvisor', '"Non dite che Franchi è risorto: trippa alla romana fredda, crocchette e supplì mediocri."', 'Il confronto con Franchi usato come metro di giudizio.'],
+    [1, 'dic 2023', 'TripAdvisor', '"Oggi i supplì non li abbiamo fatti… che peccato! Le leggendarie rosticcerie di un tempo sono scomparse."', 'Disponibilità del prodotto atteso: il cliente arriva per il supplì e non lo trova.']
+  ];
+  const qgrid = document.createElement('div'); qgrid.className = 'grid two';
+  QUOTES.forEach(([stars, dt, src, txt, note]) => {
+    const q = document.createElement('div'); q.className = 'quote';
+    const h = document.createElement('div'); h.className = 'qh';
+    const s = document.createElement('span'); s.className = 'stars'; s.textContent = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+    const m = document.createElement('span'); m.className = 'qm'; m.textContent = dt + ' · ' + src;
+    h.appendChild(s); h.appendChild(m); q.appendChild(h);
+    const b = document.createElement('div'); b.className = 'qt'; b.textContent = txt; q.appendChild(b);
+    const n = document.createElement('div'); n.className = 'qs'; n.textContent = note; q.appendChild(n);
+    qgrid.appendChild(q);
+  });
+  pane.appendChild(qgrid);
+  pane.appendChild(Object.assign(document.createElement('div'), {style: 'height:16px'}));
+
+  // temi ricorrenti
+  const th = document.createElement('div'); th.className = 'sectionTitle'; th.textContent = 'Temi ricorrenti nelle recensioni negative';
+  pane.appendChild(th);
+  const trow = document.createElement('div'); trow.className = 'grid'; trow.style.gridTemplateColumns = 'repeat(auto-fit, minmax(240px, 1fr))';
+  [['🏛 Eredità Franchi', 'Il metro di giudizio è il passato: chi conosceva Franchi valuta Gabrini sul ricordo, non sull\'offerta attuale. Serve raccontare la differenza di progetto.', 'neg'],
+   ['🍙 Supplì e fritti', 'Il prodotto più simbolico è il più esposto: mozzarella assente, sapore, disponibilità. Con 20 mila battute l\'impatto di ogni difetto è moltiplicato.', 'neg'],
+   ['💶 Percezione prezzi', 'Supplì a €2,50, conti percepiti alti, etichetta "turistico" su Google. Il valore c\'è ma non viene sempre percepito — soprattutto dai clienti di quartiere.', 'warn2'],
+   ['🛎 Cassa e accoglienza', 'Gli episodi di scortesia (ago 2025, feb 2026) generano le recensioni più dure. È l\'area con il miglior rapporto costo/beneficio di intervento.', 'warn2']].forEach(([t1, t2, cls]) => {
+    const c = document.createElement('div'); c.className = 'card';
+    const d = document.createElement('div'); d.className = 'rev-li ' + cls; d.style.marginBottom = '0';
+    const e1 = document.createElement('div'); e1.className = 'rt'; e1.textContent = t1;
+    const e2 = document.createElement('div'); e2.className = 'rd'; e2.textContent = t2;
+    d.appendChild(e1); d.appendChild(e2); c.appendChild(d); trow.appendChild(c);
+  });
+  pane.appendChild(trow);
+
+  const note = document.createElement('p'); note.className = 'sub';
+  note.style.marginTop = '14px'; note.style.fontSize = '11.5px'; note.style.color = 'rgba(255,255,255,0.68)';
+  note.textContent = 'Fonti: TripAdvisor (61 recensioni, rating 3,7/5, #54 su 152 gastronomie a Roma), Google Maps (~490 recensioni, 4,2/5, via aggregatore Trustindex), stampa di settore (Gambero Rosso, Identità Golose, RomaToday). Analisi aggiornata a luglio 2026. Le recensioni Google non sono estraibili direttamente senza accesso all\'account Business: il dettaglio Google è ricavato da aggregatori terzi.';
+  pane.appendChild(note);
 })();
 
 /* ================= THEME + RESIZE ================= */
