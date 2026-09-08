@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latta × CX Living — Simulatore Break-Even</title>
+<style>
+  :root{
+    --bordo:#7C1D2B; --dark:#4A1019; --tint:#F7EDED; --tint2:#FBF5F5;
+    --ink:#262220; --mut:#7A716B; --line:#EBD9DB; --surface:#FFFFFF;
+    --ok:#00916E; --ko:#A63446; --rf:#B9761C; --mt:#4759C7;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--surface);line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 26px}
+  .hero{background:var(--dark);color:#fff;padding:56px 0 46px;position:relative;overflow:hidden}
+  .hero::after{content:'';position:absolute;right:-160px;top:-240px;width:560px;height:560px;border:1.5px solid var(--bordo);border-radius:50%}
+  .hero .brand{font-size:15px;font-weight:800;letter-spacing:.35em}
+  .hero h1{font-size:34px;margin:18px 0 6px;letter-spacing:-.01em}
+  .hero .sub{font-size:15px;color:#E8CDD1}
+  .kicker{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;color:var(--bordo);margin-bottom:6px}
+  h2{font-size:26px;margin-bottom:4px;letter-spacing:-.01em}
+  .sub2{font-size:14px;color:var(--mut)}
+  section{padding:44px 0}
+
+  /* summary bar */
+  .sumbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .sumbar .wrap{display:flex;gap:26px;align-items:center;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}
+  .sumbar .it{font-size:12px;color:var(--mut);font-weight:600}
+  .sumbar .it b{display:block;font-size:17px;color:var(--ink);font-weight:800}
+
+  /* controls */
+  .controls{display:flex;gap:22px;flex-wrap:wrap;margin:20px 0 6px}
+  .ctrl{min-width:200px}
+  .ctrl .lab{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+  .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{padding:9px 15px;border:none;background:transparent;font-size:13.5px;font-weight:700;color:var(--mut);cursor:pointer;border-right:1.5px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button:hover{color:var(--bordo)}
+  .seg button.on{background:var(--bordo);color:#fff}
+  .seg button small{display:block;font-size:10px;font-weight:600;opacity:.8}
+  .tgl{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;cursor:pointer;padding:9px 0}
+  .tgl input{width:38px;height:22px;appearance:none;background:#D8D2CC;border-radius:999px;position:relative;cursor:pointer;transition:background .15s;flex:none}
+  .tgl input:checked{background:var(--ok)}
+  .tgl input::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .15s}
+  .tgl input:checked::after{left:18px}
+
+  details.custom{margin:12px 0 0;border:1px solid var(--line);border-radius:12px;background:var(--tint2)}
+  details.custom summary{padding:11px 16px;font-size:13px;font-weight:700;color:var(--bordo);cursor:pointer;list-style:none}
+  details.custom summary::before{content:'⚙ '}
+  details.custom .inps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:4px 16px 16px}
+  .inp label{display:block;font-size:11px;font-weight:600;color:var(--mut);margin-bottom:3px}
+  .inp input{width:100%;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;color:var(--ink);background:#fff}
+  .inp input:focus{outline:none;border-color:var(--bordo)}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:13px;margin:20px 0}
+  .kpi{background:var(--tint2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi.hl{background:var(--tint);border-color:#E0C9CC}
+  .kpi .v{font-size:24px;font-weight:800;letter-spacing:-.01em}
+  .kpi .v.neg{color:var(--ko)} .kpi .v.pos{color:var(--ok)}
+  .kpi .t{font-size:11.5px;color:var(--mut);font-weight:600;margin-top:2px}
+
+  .duo{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}
+  @media(max-width:860px){.duo{grid-template-columns:1fr}}
+  .chartbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+  .chartbox h4{font-size:14.5px;margin-bottom:2px}
+  .chartbox .note{font-size:12px;color:var(--mut);margin-bottom:8px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+  svg text{font-family:inherit}
+
+  table.ce{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.ce td{padding:8px 4px;border-bottom:1px solid var(--line)}
+  table.ce td:last-child{text-align:right;font-weight:700}
+  table.ce td:nth-child(2){text-align:right;color:var(--mut);font-weight:400;font-size:12px}
+  table.ce tr.tot td{border-bottom:none;color:var(--bordo);font-weight:800;font-size:15px}
+
+  #tip{position:fixed;pointer-events:none;background:#262220;color:#fff;font-size:12.5px;padding:8px 11px;border-radius:8px;opacity:0;transition:opacity .1s;z-index:99;max-width:250px;line-height:1.4}
+  #tip b{color:#F5C9CF}
+
+  .totrow{overflow-x:auto}
+  table.data{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  table.data th{background:var(--dark);color:#fff;padding:10px 14px;font-size:12.5px;text-align:center}
+  table.data th:first-child{text-align:left;border-radius:10px 0 0 0}
+  table.data th:last-child{border-radius:0 10px 0 0}
+  table.data td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:center;color:var(--mut)}
+  table.data td:first-child{text-align:left;color:var(--ink);font-weight:600}
+  table.data tr.tot td{background:var(--tint);color:var(--bordo);font-weight:800;border-bottom:none}
+  .neg{color:var(--ko)!important} .pos{color:var(--ok)!important}
+
+  .callout{background:var(--tint);border-radius:12px;padding:16px 20px;font-size:13.5px;margin-top:16px}
+  footer{background:var(--dark);color:#B98A92;padding:28px 0;font-size:12px;margin-top:30px}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+
+<header class="hero"><div class="wrap">
+  <div class="brand">LATTA × CX LIVING</div>
+  <h1>Business plan operativo — simulatore break-even</h1>
+  <div class="sub">Via del Crocifisso, Roma · le due unità separate · scegli food cost, personale e incassi: tutti i numeri si aggiornano</div>
+</div></header>
+
+<div class="sumbar"><div class="wrap" id="sumbar"></div></div>
+
+<section id="rist"><div class="wrap">
+  <div class="kicker">Unità 1 · aperta tutto l'anno (360 gg)</div>
+  <h2>Ristorante — Piano Zero</h2>
+  <div class="sub2">~160 coperti (70 ristorante + 20 salottini + 70 dehors), cucina 98 mq, all-day</div>
+
+  <div class="controls">
+    <div class="ctrl"><div class="lab">Food &amp; beverage cost</div>
+      <div class="seg" id="r_fc"></div></div>
+    <div class="ctrl"><div class="lab">Personale</div>
+      <div class="seg" id="r_pers"></div></div>
+    <div class="ctrl"><div class="lab">Incassi</div>
+      <div class="seg" id="r_inc"></div></div>
+    <div class="ctrl"><div class="lab">Colazioni hotel</div>
+      <label class="tgl"><input type="checkbox" id="r_col" checked><span id="r_col_lab">incluse</span></label></div>
+  </div>
+
+  <details class="custom"><summary>Personalizza le ipotesi</summary>
+    <div class="inps">
+      <div class="inp"><label>Coperti / giorno</label><input type="number" id="r_cop" step="5"></div>
+      <div class="inp"><label>Spesa media €</label><input type="number" id="r_spesa" step="0.5"></div>
+      <div class="inp"><label>Colazioni / giorno</label><input type="number" id="r_colgg" step="5"></div>
+      <div class="inp"><label>Prezzo colazione €</label><input type="number" id="r_colpr" step="0.5"></div>
+      <div class="inp"><label>Personale € / anno</label><input type="number" id="r_persv" step="10000"></div>
+      <div class="inp"><label>Costi fissi € / anno</label><input type="number" id="r_fissi" step="2000"></div>
+      <div class="inp"><label>Altri costi variabili %</label><input type="number" id="r_var" step="0.5"></div>
+    </div>
+  </details>
+
+  <div class="kpis" id="r_kpis"></div>
+
+  <div class="duo">
+    <div class="chartbox">
+      <h4>Grafico di pareggio</h4>
+      <div class="note" id="r_chart_note"></div>
+      <div id="r_chart"></div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>Ricavi annui</span><span><i style="background:var(--ko)"></i>Costi totali</span><span><i style="background:var(--ink);height:8px;width:8px;border-radius:50%"></i>Punto attuale</span></div>
+    </div>
+    <div class="chartbox">
+      <h4>Conto economico annuo</h4>
+      <div class="note">con le scelte correnti</div>
+      <table class="ce" id="r_ce"></table>
+    </div>
+  </div>
+</div></section>
+
+<section id="roof" style="background:var(--tint2)"><div class="wrap">
+  <div class="kicker">Unità 2 · stagionale</div>
+  <h2>Rooftop bar — 700 mq</h2>
+  <div class="sub2">100 pax, beverage-led, panoramico · giorni di apertura secondo lo scenario incassi</div>
+
+  <div class="controls">
+    <div class="ctrl"><div class="lab">Food &amp; beverage cost</div>
+      <div class="seg" id="f_fc"></div></div>
+    <div class="ctrl"><div class="lab">Personale</div>
+      <div class="seg" id="f_pers"></div></div>
+    <div class="ctrl"><div class="lab">Incassi</div>
+      <div class="seg" id="f_inc"></div></div>
+  </div>
+
+  <details class="custom"><summary>Personalizza le ipotesi</summary>
+    <div class="inps">
+      <div class="inp"><label>Giorni di apertura</label><input type="number" id="f_gg" step="10"></div>
+      <div class="inp"><label>Clienti / giorno</label><input type="number" id="f_cli" step="5"></div>
+      <div class="inp"><label>Spesa media €</label><input type="number" id="f_spesa" step="0.5"></div>
+      <div class="inp"><label>Personale € / anno</label><input type="number" id="f_persv" step="5000"></div>
+      <div class="inp"><label>Costi fissi € / anno</label><input type="number" id="f_fissi" step="2000"></div>
+      <div class="inp"><label>Altri costi variabili %</label><input type="number" id="f_var" step="0.5"></div>
+    </div>
+  </details>
+
+  <div class="kpis" id="f_kpis"></div>
+
+  <div class="duo">
+    <div class="chartbox">
+      <h4>Grafico di pareggio</h4>
+      <div class="note" id="f_chart_note"></div>
+      <div id="f_chart"></div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>Ricavi annui</span><span><i style="background:var(--ko)"></i>Costi totali</span><span><i style="background:var(--ink);height:8px;width:8px;border-radius:50%"></i>Punto attuale</span></div>
+    </div>
+    <div class="chartbox">
+      <h4>Conto economico annuo</h4>
+      <div class="note">con le scelte correnti</div>
+      <table class="ce" id="f_ce"></table>
+    </div>
+  </div>
+</div></section>
+
+<section id="tot"><div class="wrap">
+  <div class="kicker">Le due unità insieme</div>
+  <h2>Quadro complessivo</h2>
+  <div class="totrow"><table class="data" id="tot_table"></table></div>
+  <div class="callout" id="tot_note"></div>
+</div></section>
+
+<footer><div class="wrap">Latta — Fermenti e Miscele · proposta riservata · valori previsionali basati sulle ipotesi selezionate. Esclusi capex, ammortamenti e oneri finanziari. L'affitto a CX Living è il 10% del fatturato di ciascuna unità.</div></footer>
+
+<script>
+'use strict';
+const fmt = n => Math.round(n).toLocaleString('it-IT');
+const fk = n => (n<0?'−':'') + '€' + fmt(Math.abs(n)/1000) + 'k';
+const feuro = n => '€' + fmt(n);
+const fpct = n => (n*100).toLocaleString('it-IT',{maximumFractionDigits:1}) + '%';
+
+const SC_INC = {
+  rist: { ottimistico:{cop:120,spesa:23,colgg:80}, neutrale:{cop:95,spesa:21,colgg:60}, pessimistico:{cop:70,spesa:20,colgg:40} },
+  roof: { ottimistico:{gg:220,cli:100,spesa:20}, neutrale:{gg:200,cli:75,spesa:19}, pessimistico:{gg:180,cli:50,spesa:18} }
+};
+const SC_PERS = {
+  rist: { ottimistico:260000, neutrale:300000, pessimistico:340000 },
+  roof: { ottimistico:80000,  neutrale:105000, pessimistico:130000 }
+};
+const AFF = 0.10;
+
+const st = {
+  r: { fc:0.35, pers:'neutrale', inc:'neutrale' },
+  f: { fc:0.30, pers:'neutrale', inc:'neutrale' }
+};
+
+const $ = id => document.getElementById(id);
+const tip = $('tip');
+function showTip(html, x, y){ tip.innerHTML = html; tip.style.opacity = 1;
+  tip.style.left = Math.min(x + 14, innerWidth - 270) + 'px'; tip.style.top = (y + 14) + 'px'; }
+function hideTip(){ tip.style.opacity = 0; }
+
+/* ---------- segmented controls ---------- */
+function buildSeg(el, items, get, set){
+  items.forEach(it => {
+    const b = document.createElement('button');
+    b.innerHTML = it.label + (it.small ? `<small>${it.small}</small>` : '');
+    b.onclick = () => { set(it.v); refresh(); };
+    b.dataset.v = JSON.stringify(it.v);
+    el.appendChild(b);
+  });
+  el._get = get;
+}
+function paintSegs(){
+  document.querySelectorAll('.seg').forEach(seg => {
+    if (!seg._get) return;
+    const cur = JSON.stringify(seg._get());
+    [...seg.children].forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+  });
+}
+const persLab = k => ({ottimistico:'Ottimistico', neutrale:'Neutrale', pessimistico:'Pessimistico'})[k];
+
+buildSeg($('r_fc'), [30,35,40].map(v=>({label:v+'%', v:v/100})), ()=>st.r.fc, v=>st.r.fc=v);
+buildSeg($('r_pers'), Object.keys(SC_PERS.rist).map(k=>({label:persLab(k), small:fk(SC_PERS.rist[k]), v:k})), ()=>st.r.pers, v=>{st.r.pers=v; fillRist();});
+buildSeg($('r_inc'), Object.keys(SC_INC.rist).map(k=>({label:persLab(k), v:k})), ()=>st.r.inc, v=>{st.r.inc=v; fillRist();});
+buildSeg($('f_fc'), [30,35,40].map(v=>({label:v+'%', v:v/100})), ()=>st.f.fc, v=>st.f.fc=v);
+buildSeg($('f_pers'), Object.keys(SC_PERS.roof).map(k=>({label:persLab(k), small:fk(SC_PERS.roof[k]), v:k})), ()=>st.f.pers, v=>{st.f.pers=v; fillRoof();});
+buildSeg($('f_inc'), Object.keys(SC_INC.roof).map(k=>({label:persLab(k), v:k})), ()=>st.f.inc, v=>{st.f.inc=v; fillRoof();});
+
+/* ---------- inputs (source of truth) ---------- */
+function fillRist(){
+  const i = SC_INC.rist[st.r.inc];
+  $('r_cop').value = i.cop; $('r_spesa').value = i.spesa; $('r_colgg').value = i.colgg;
+  $('r_persv').value = SC_PERS.rist[st.r.pers];
+}
+function fillRoof(){
+  const i = SC_INC.roof[st.f.inc];
+  $('f_gg').value = i.gg; $('f_cli').value = i.cli; $('f_spesa').value = i.spesa;
+  $('f_persv').value = SC_PERS.roof[st.f.pers];
+}
+$('r_colpr').value = 9; $('r_fissi').value = 36000; $('r_var').value = 6;
+$('f_fissi').value = 18000; $('f_var').value = 6;
+fillRist(); fillRoof();
+document.querySelectorAll('input[type=number]').forEach(inp => inp.addEventListener('input', refresh));
+$('r_col').addEventListener('change', refresh);
+
+/* ---------- model ---------- */
+const num = id => Math.max(0, parseFloat($(id).value) || 0);
+function calcRist(){
+  const cop=num('r_cop'), spesa=num('r_spesa'), colOn=$('r_col').checked,
+        colgg=colOn?num('r_colgg'):0, colpr=num('r_colpr'),
+        pers=num('r_persv'), fissi=num('r_fissi'), varp=num('r_var')/100, fc=st.r.fc;
+  const ricCol = colgg*colpr*360, ricBase = cop*spesa*360, ric = ricBase+ricCol;
+  const m = 1-fc-AFF-varp, ft = pers+fissi;
+  const eb = ric*m-ft, be = m>0? ft/m : Infinity;
+  const beCop = spesa>0? Math.max(0, be-ricCol)/(spesa*360) : 0;
+  return {ric, ricBase, ricCol, m, ft, eb, be, beCop, cop, spesa, colgg, colpr, pers, fissi, varp, fc, colOn};
+}
+function calcRoof(){
+  const gg=num('f_gg'), cli=num('f_cli'), spesa=num('f_spesa'),
+        pers=num('f_persv'), fissi=num('f_fissi'), varp=num('f_var')/100, fc=st.f.fc;
+  const ric = gg*cli*spesa, m = 1-fc-AFF-varp, ft = pers+fissi;
+  const eb = ric*m-ft, be = m>0? ft/m : Infinity;
+  const beCli = (spesa>0&&gg>0)? be/(spesa*gg) : 0;
+  return {ric, m, ft, eb, be, beCli, gg, cli, spesa, pers, fissi, varp, fc};
+}
+
+/* ---------- KPIs ---------- */
+function kpiHTML(list){
+  return list.map(k=>`<div class="kpi${k.hl?' hl':''}"><div class="v ${k.cls||''}">${k.v}</div><div class="t">${k.t}</div></div>`).join('');
+}
+function ebCls(v){ return v<0? 'neg' : 'pos'; }
+
+/* ---------- break-even chart ---------- */
+function beChart(elId, o, unit){
+  // unit: {maxX, curX, beX, perDay: revenue per unit of X, extra: fixed revenue (colazioni), days label}
+  const W=520, H=280, PL=46, PR=14, PT=16, PB=34;
+  const maxX = unit.maxX;
+  const revAt = x => x*unit.perDay + unit.extra;
+  const costAt = x => o.ft + (1-o.m)*revAt(x);
+  const maxY = Math.max(revAt(maxX), costAt(maxX))*1.06;
+  const sx = x => PL + (W-PL-PR)*x/maxX;
+  const sy = y => (H-PB) - (H-PB-PT)*y/maxY;
+  let svg = `<svg id="${elId}_svg" viewBox="0 0 ${W} ${H}" width="100%" style="cursor:crosshair" role="img" aria-label="Grafico di pareggio">`;
+  // grid: 4 light horizontal lines + y labels
+  for(let g=1; g<=4; g++){
+    const yv = maxY*g/4;
+    svg += `<line x1="${PL}" y1="${sy(yv)}" x2="${W-PR}" y2="${sy(yv)}" stroke="#F0E7E1" stroke-width="1"/>
+            <text x="${PL-6}" y="${sy(yv)+4}" text-anchor="end" font-size="10" fill="#7A716B">${fmt(yv/1000)}k</text>`;
+  }
+  svg += `<line x1="${PL}" y1="${sy(0)}" x2="${W-PR}" y2="${sy(0)}" stroke="#D8D2CC" stroke-width="1"/>`;
+  // x labels
+  for(let g=0; g<=4; g++){
+    const xv = maxX*g/4;
+    svg += `<text x="${sx(xv)}" y="${H-14}" text-anchor="middle" font-size="10" fill="#7A716B">${Math.round(xv)}</text>`;
+  }
+  svg += `<text x="${(PL+W-PR)/2}" y="${H-2}" text-anchor="middle" font-size="10.5" fill="#7A716B">${unit.xlab}</text>`;
+  // BE shaded region (loss zone)
+  if (o.m>0 && unit.beX<maxX){
+    svg += `<rect x="${PL}" y="${PT}" width="${sx(unit.beX)-PL}" height="${H-PB-PT}" fill="#A63446" opacity="0.05"/>`;
+  }
+  // lines
+  const pts = f => Array.from({length:41},(_,i)=>{const x=maxX*i/40; return sx(x)+','+sy(f(x));}).join(' ');
+  svg += `<polyline points="${pts(revAt)}" fill="none" stroke="#00916E" stroke-width="2"/>
+          <polyline points="${pts(costAt)}" fill="none" stroke="#A63446" stroke-width="2"/>`;
+  // BE point
+  if (o.m>0 && unit.beX<=maxX){
+    const bx=sx(unit.beX), by=sy(revAt(unit.beX));
+    svg += `<circle cx="${bx}" cy="${by}" r="6" fill="#fff" stroke="#262220" stroke-width="2"/>
+            <text x="${bx}" y="${by-12}" text-anchor="middle" font-size="11" font-weight="700" fill="#262220">pareggio: ${Math.round(unit.beX)}</text>`;
+  }
+  // current point
+  const cx=sx(Math.min(unit.curX,maxX)), cyv=revAt(Math.min(unit.curX,maxX));
+  svg += `<circle cx="${cx}" cy="${sy(cyv)}" r="5.5" fill="#262220" stroke="#fff" stroke-width="2"/>`;
+  svg += `<rect id="${elId}_hit" x="${PL}" y="${PT}" width="${W-PL-PR}" height="${H-PB-PT}" fill="transparent"/>`;
+  svg += '</svg>';
+  const el = $(elId); el.innerHTML = svg;
+  const hit = $(elId+'_hit'), svgEl = $(elId+'_svg');
+  hit.addEventListener('mousemove', ev => {
+    const r = svgEl.getBoundingClientRect();
+    const x = (ev.clientX - r.left)/r.width*W;
+    const xv = Math.max(0, Math.min(maxX, (x-PL)/(W-PL-PR)*maxX));
+    const rv = revAt(xv), cv = costAt(xv);
+    showTip(`<b>${Math.round(xv)} ${unit.xshort}</b><br>Ricavi ${fk(rv)} · Costi ${fk(cv)}<br>Risultato <b>${cv>rv?'−':''}${fk(Math.abs(rv-cv))}</b>`, ev.clientX, ev.clientY);
+  });
+  hit.addEventListener('mouseleave', hideTip);
+}
+
+/* ---------- CE tables ---------- */
+function ceRows(o, rows){
+  return rows.map(r => `<tr${r.tot?' class="tot"':''}><td>${r.l}</td><td>${r.p||''}</td><td class="${r.v<0&&r.tot?'neg':''}">${r.v<0?'−':''}${fk(Math.abs(r.v))}</td></tr>`).join('');
+}
+
+/* ---------- refresh ---------- */
+function refresh(){
+  paintSegs();
+  $('r_col_lab').textContent = $('r_col').checked ? 'incluse' : 'escluse';
+  const R = calcRist(), F = calcRoof();
+
+  $('r_kpis').innerHTML = kpiHTML([
+    {v:fk(R.ric), t:'Ricavi annui'},
+    {v:fk(R.eb), t:'EBITDA · '+(R.ric>0?fpct(R.eb/R.ric):'—'), cls:ebCls(R.eb), hl:true},
+    {v:fk(R.be), t:'Ricavi di pareggio'},
+    {v:Math.ceil(R.beCop)+' <span style="font-size:13px">cop/gg</span>', t:'Coperti/giorno per il pareggio'+(R.colOn?' (con colazioni)':'')},
+    {v:(R.ric>0? fpct((R.ric-R.be)/R.ric):'—'), t:'Margine di sicurezza', cls:ebCls(R.ric-R.be)}
+  ]);
+  $('r_chart_note').textContent = `Spesa media €${R.spesa} · FC ${fpct(R.fc)} · personale ${fk(R.pers+0)} · colazioni ${R.colOn? R.colgg+'/gg a €'+R.colpr : 'escluse'}`;
+  beChart('r_chart', R, {maxX:170, curX:R.cop, beX:R.beCop, perDay:R.spesa*360, extra:R.ricCol, xlab:'coperti al giorno (ristorante)', xshort:'coperti/gg'});
+  $('r_ce').innerHTML = ceRows(R, [
+    {l:'Ricavi coperti', v:R.ricBase},
+    {l:'Ricavi colazioni hotel', v:R.ricCol},
+    {l:'Food & beverage cost', p:fpct(R.fc), v:-R.ric*R.fc},
+    {l:'Affitto a CX Living', p:'10%', v:-R.ric*AFF},
+    {l:'Altri costi variabili', p:fpct(R.varp), v:-R.ric*R.varp},
+    {l:'Personale', v:-R.pers},
+    {l:'Costi fissi di struttura', v:-R.fissi},
+    {l:'EBITDA', p:R.ric>0?fpct(R.eb/R.ric):'', v:R.eb, tot:true}
+  ]);
+
+  $('f_kpis').innerHTML = kpiHTML([
+    {v:fk(F.ric), t:'Ricavi annui ('+F.gg+' giorni)'},
+    {v:fk(F.eb), t:'EBITDA · '+(F.ric>0?fpct(F.eb/F.ric):'—'), cls:ebCls(F.eb), hl:true},
+    {v:fk(F.be), t:'Ricavi di pareggio'},
+    {v:Math.ceil(F.beCli)+' <span style="font-size:13px">cli/gg</span>', t:'Clienti/giorno per il pareggio'},
+    {v:(F.ric>0? fpct((F.ric-F.be)/F.ric):'—'), t:'Margine di sicurezza', cls:ebCls(F.ric-F.be)}
+  ]);
+  $('f_chart_note').textContent = `Spesa media €${F.spesa} · FC ${fpct(F.fc)} · personale ${fk(F.pers)} · ${F.gg} giorni di apertura`;
+  beChart('f_chart', F, {maxX:140, curX:F.cli, beX:F.beCli, perDay:F.spesa*F.gg, extra:0, xlab:'clienti al giorno (rooftop)', xshort:'clienti/gg'});
+  $('f_ce').innerHTML = ceRows(F, [
+    {l:'Ricavi bar', v:F.ric},
+    {l:'Beverage & food cost', p:fpct(F.fc), v:-F.ric*F.fc},
+    {l:'Affitto a CX Living', p:'10%', v:-F.ric*AFF},
+    {l:'Altri costi variabili', p:fpct(F.varp), v:-F.ric*F.varp},
+    {l:'Personale stagionale', v:-F.pers},
+    {l:'Costi fissi di struttura', v:-F.fissi},
+    {l:'EBITDA', p:F.ric>0?fpct(F.eb/F.ric):'', v:F.eb, tot:true}
+  ]);
+
+  /* totals */
+  const tRic = R.ric+F.ric, tEb = R.eb+F.eb, tAff = tRic*AFF;
+  $('sumbar').innerHTML = [
+    ['Ricavi totali', fk(tRic)],
+    ['EBITDA ristorante', fk(R.eb), ebCls(R.eb)],
+    ['EBITDA rooftop', fk(F.eb), ebCls(F.eb)],
+    ['EBITDA complessivo', fk(tEb), ebCls(tEb)],
+    ['Affitto a CX (10%)', fk(tAff)]
+  ].map(x=>`<div class="it">${x[0]}<b class="${x[2]||''}">${x[1]}</b></div>`).join('');
+
+  const cells = (a,b) => `<td class="${a<0?'neg':''}">${a<0?'−':''}${fk(Math.abs(a))}</td><td class="${b<0?'neg':''}">${b<0?'−':''}${fk(Math.abs(b))}</td><td class="${(a+b)<0?'neg':''}">${(a+b)<0?'−':''}${fk(Math.abs(a+b))}</td>`;
+  $('tot_table').innerHTML = `
+    <thead><tr><th></th><th>Ristorante</th><th>Rooftop</th><th>Totale</th></tr></thead><tbody>
+    <tr><td>Ricavi</td>${cells(R.ric, F.ric)}</tr>
+    <tr><td>Food & beverage cost</td>${cells(-R.ric*R.fc, -F.ric*F.fc)}</tr>
+    <tr><td>Affitto a CX Living (10%)</td>${cells(-R.ric*AFF, -F.ric*AFF)}</tr>
+    <tr><td>Altri costi variabili</td>${cells(-R.ric*R.varp, -F.ric*F.varp)}</tr>
+    <tr><td>Personale</td>${cells(-R.pers, -F.pers)}</tr>
+    <tr><td>Costi fissi</td>${cells(-R.fissi, -F.fissi)}</tr>
+    <tr class="tot"><td>EBITDA</td>${cells(R.eb, F.eb)}</tr>
+    </tbody>`;
+  const beTot = R.be + F.be;
+  $('tot_note').innerHTML = `Con le scelte correnti il punto di pareggio complessivo è a <b>${fk(beTot)}</b> di ricavi annui (${fk(R.be)} ristorante + ${fk(F.be)} rooftop). ${tEb>=0? 'Le scelte attuali generano un margine di sicurezza: i ricavi superano il pareggio di <b>'+fk(tRic-beTot)+'</b>.' : 'Con queste scelte mancano <b>'+fk(beTot-tRic)+'</b> di ricavi al pareggio: agisci su food cost, colazioni o stagione rooftop.'}`;
+}
+refresh();
+</script>
+</body>
+</html>
